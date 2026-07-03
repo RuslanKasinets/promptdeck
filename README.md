@@ -4,7 +4,7 @@
 
 Mix genres like a DJ, roll endless prompt variants, and paste a ready style prompt straight into Suno's style box. No build step, no backend, no dependencies — a single HTML file.
 
-**Live demo:** `https://YOUR-USERNAME.github.io/promptdeck/` *(replace after deploying)*
+**Live demo:** [https://ruslankasinets.github.io/promptdeck/](https://ruslankasinets.github.io/promptdeck/)
 
 ---
 
