@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PromptDeck v1.1 — Suno Style Prompt Mixer</title>
+<meta name="description" content="PromptDeck — a mixing-console style prompt builder for Suno AI. Mix up to three genres, dial in bass, vocals, arrangement and mood engines, and copy a ready style prompt.">
+<meta name="theme-color" content="#0A0A0C">
+<meta property="og:title" content="PromptDeck — Suno Style Prompt Mixer">
+<meta property="og:description" content="Mix genres like a DJ, roll endless prompt variants, and paste straight into Suno's style box.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A0A0C'/%3E%3Crect x='14' y='38' width='7' height='14' rx='2' fill='%23E85BC8'/%3E%3Crect x='28' y='28' width='7' height='24' rx='2' fill='%23FF5C33'/%3E%3Crect x='42' y='20' width='7' height='32' rx='2' fill='%239D6BFF'/%3E%3Ccircle cx='32' cy='13' r='5' fill='%23FF5C33'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0C; --panel:#151517; --panel2:#1F1F23; --line:#2A2A30;
+  --ink:#EDEDEF; --dim:#8B8B94;
+  --amber:#FF5C33; --cue:#E85BC8; --vio:#9D6BFF;
+  --warn:#FF4D3D; --well:#0F0F11;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background-color:var(--bg);background-image:radial-gradient(560px 300px at 50% -60px,rgba(255,84,44,.16),transparent 70%);background-repeat:no-repeat;color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.5;min-height:100vh}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+button{font-family:inherit;cursor:pointer}
+
+.top{display:flex;align-items:baseline;gap:14px;padding:22px 26px;border-bottom:1px solid var(--line)}
+.top h1{font-size:20px;font-weight:700;letter-spacing:.02em}
+.top h1 .led{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);margin-right:9px;vertical-align:2px}
+.top span{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+
+.app{max-width:1160px;margin:0 auto;padding:26px;display:grid;grid-template-columns:340px minmax(0,1fr);gap:26px}
+.app>div{min-width:0}
+@media(max-width:900px){.app{grid-template-columns:minmax(0,1fr)}}
+
+.label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+
+.genres{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.gcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;text-align:left;color:var(--ink);font-size:13.5px;font-weight:500;transition:border-color .12s ease, background .12s ease;position:relative}
+.gcard small{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);margin-top:2px;letter-spacing:.05em}
+.gcard:hover{border-color:var(--dim)}
+.gcard.selA{border-color:var(--amber);background:#26140E}
+.gcard.selB{border-color:var(--cue);background:#26101F}
+.gcard.selC{border-color:var(--vio);background:#1D1230}
+.gcard .ch{position:absolute;top:8px;right:9px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em}
+.gcard.selA .ch{color:var(--amber)} .gcard.selB .ch{color:var(--cue)} .gcard.selC .ch{color:var(--vio)}
+.hint{font-size:12px;color:var(--dim);margin-top:12px;line-height:1.6}
+
+.console{display:flex;flex-direction:column;gap:18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+
+.strips{display:flex;flex-direction:column;gap:12px}
+.strip{display:flex;align-items:center;gap:14px}
+.strip .sn{font-size:13px;font-weight:700;min-width:150px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strip.a .sn{color:var(--amber)} .strip.b .sn{color:var(--cue)} .strip.c .sn{color:var(--vio)}
+.strip input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;outline-offset:4px}
+.strip.a input{background:linear-gradient(to right,#3D1A0E,var(--amber))}
+.strip.b input{background:linear-gradient(to right,#38122B,var(--cue))}
+.strip.c input{background:linear-gradient(to right,#241344,var(--vio))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:26px;border-radius:4px;background:var(--ink);border:1px solid #000;box-shadow:0 2px 6px rgba(0,0,0,.6);cursor:grab}
+input[type=range]::-moz-range-thumb{width:14px;height:26px;border-radius:4px;background:var(--ink);border:1px solid #000;cursor:grab}
+.strip .pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);min-width:44px;text-align:right}
+.mix-off{font-size:12px;color:var(--dim)}
+.mix-note{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-top:10px;letter-spacing:.06em}
+
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.reroll{background:var(--amber);color:#230A03;border:none;border-radius:12px;font-weight:700;font-size:15px;padding:13px 22px;transition:transform .1s ease, box-shadow .1s ease;box-shadow:0 3px 0 #A32D12,0 0 26px rgba(255,92,51,.28)}
+.reroll:hover{transform:translateY(-1px)}
+.reroll:active{transform:translateY(2px);box-shadow:0 0 0 #A32D12,0 0 26px rgba(255,92,51,.28)}
+.reroll:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--cue);outline-offset:3px}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{background:var(--panel2);color:var(--dim);border:none;padding:11px 14px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:#2B1610;color:var(--amber)}
+.seg-note{font-size:11.5px;color:var(--dim)}
+
+.bpmbox{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+.bpmbox .bpmlab{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim)}
+.bpmauto{background:var(--panel2);color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:8px 13px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em}
+.bpmauto.on{background:#2B1610;color:var(--amber);border-color:var(--amber)}
+.bpmbox input[type=range]{flex:1;min-width:140px;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--line);outline-offset:4px}
+.bpmbox input[type=range]:disabled{opacity:.35}
+.bpmval{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);min-width:82px}
+.bpm-def{color:var(--dim)}
+.bassbox{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.bassbox .bpmlab{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim)}
+.bassbox select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;min-width:170px}
+.bassbox select:focus-visible{outline:2px solid var(--cue);outline-offset:3px}
+.bassseg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.bassseg button{background:var(--panel2);color:var(--dim);border:none;padding:9px 11px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em}
+.bassseg button+button{border-left:1px solid var(--line)}
+.bassseg button.on{background:#2B1610;color:var(--amber)}
+.bassseg button:disabled{opacity:.35;cursor:default}
+.slot .src.x{color:var(--amber)}
+.slots{display:flex;flex-direction:column;gap:6px}
+.slot{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;transition:border-color .15s ease}
+.slot.changed{border-color:var(--cue)}
+.slot .sname{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;color:var(--dim);min-width:74px;text-transform:uppercase}
+.slot .sval{flex:1;font-size:13.5px}
+.slot.changed .sval{color:var(--cue)}
+.slot .src{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em}
+.slot .src.a{color:var(--amber)} .slot .src.b{color:var(--cue)} .slot .src.c{color:var(--vio)}
+.slot .lock{background:none;border:1px solid var(--line);border-radius:5px;color:var(--dim);font-size:11px;padding:4px 8px;font-family:'JetBrains Mono',monospace}
+.slot .lock.on{color:var(--amber);border-color:var(--amber)}
+
+.out{background:var(--well);border:1px dashed var(--line);border-radius:12px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:var(--ink);word-wrap:break-word}
+.out .hl{color:var(--cue)}
+.out-meta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px}
+.chars{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)}
+.chars.warn{color:var(--warn)}
+.copy{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 18px;font-weight:500;font-size:14px}
+.copy:hover{border-color:var(--amber);color:var(--amber)}
+.empty{color:var(--dim);font-size:14px;padding:30px 0;text-align:center}
+
+/* v0.7 — exclude chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:20px;color:var(--dim);font-size:12.5px;padding:7px 13px;transition:border-color .12s ease,color .12s ease}
+.chip:hover{border-color:var(--dim)}
+.chip.on{border-color:var(--warn);color:var(--warn);background:#2B1210}
+.exadd{display:flex;gap:8px;margin-top:12px}
+.exadd input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:12px;padding:9px 12px}
+.exadd input::placeholder{color:var(--dim)}
+.exadd button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-size:13px;padding:9px 14px}
+.exadd button:hover{border-color:var(--warn);color:var(--warn)}
+.exout{margin-top:12px;background:var(--well);border:1px dashed var(--line);border-radius:12px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--warn);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.exout .extxt{flex:1;min-width:180px}
+.excopy{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 13px;font-size:12.5px}
+.excopy:hover{border-color:var(--warn);color:var(--warn)}
+
+/* v0.7 — presets & history */
+.deckrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.savebtn{background:var(--panel2);color:var(--vio);border:1px solid var(--vio);border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px}
+.savebtn:hover{background:#221340}
+.memnote{font-size:11px;color:var(--dim);align-self:center}
+.memlist{display:flex;flex-direction:column;gap:6px}
+.memitem{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.memitem .mname{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.memitem .mname b{color:var(--vio);font-weight:600}
+.memitem .mtime{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);letter-spacing:.08em}
+.memitem button{background:none;border:1px solid var(--line);border-radius:5px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 9px;letter-spacing:.08em}
+.memitem button:hover{color:var(--ink);border-color:var(--dim)}
+.memitem button.load:hover{color:var(--vio);border-color:var(--vio)}
+.memitem button.del:hover{color:var(--warn);border-color:var(--warn)}
+.histitem{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.histitem .htxt{flex:1;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.histitem button{background:none;border:1px solid var(--line);border-radius:5px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 9px}
+.histitem button:hover{color:var(--cue);border-color:var(--cue)}
+.subhead{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:16px 0 8px}
+
+/* v0.8 — surprise & preset transfer */
+.surprise{background:var(--vio);color:#170C2B;border:none;border-radius:12px;font-weight:700;font-size:13px;padding:9px 14px;box-shadow:0 3px 0 #5F3EA8;transition:transform .1s ease, box-shadow .1s ease;white-space:nowrap}
+.surprise:hover{transform:translateY(-1px)}
+.surprise:active{transform:translateY(2px);box-shadow:0 0 0 #5F3EA8}
+.iobtn{background:var(--panel2);color:var(--dim);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em}
+.iobtn:hover{color:var(--ink);border-color:var(--dim)}
+.impbox{display:none;width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px 12px;margin-bottom:12px;resize:vertical}
+.impbox::placeholder{color:var(--dim)}
+
+/* v0.9 — genre search & filter */
+.gsearch{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 13px;margin-bottom:10px}
+.gsearch::placeholder{color:var(--dim)}
+.gsearch:focus-visible{outline:2px solid var(--cue);outline-offset:2px}
+.gcats{margin-bottom:12px}
+.gcats .chip{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;padding:6px 11px;text-transform:uppercase}
+.gcats .chip.on{border-color:var(--cue);color:var(--cue);background:#2A1122}
+.gnone{color:var(--dim);font-size:12.5px;padding:18px 4px;text-align:center}
+
+/* v0.15 — clear deck */
+.clearbtn{background:var(--panel2);color:var(--dim);border:1px solid var(--line);border-radius:12px;font-weight:700;font-size:13px;padding:9px 14px;white-space:nowrap;transition:color .12s ease,border-color .12s ease}
+.clearbtn:hover{color:var(--warn);border-color:var(--warn)}
+
+/* v0.13 — lyrics helper */
+.lyrrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.lyrrow select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;min-width:190px}
+.lyrrow select:focus-visible{outline:2px solid var(--cue);outline-offset:3px}
+.lyrtags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.lyrtags .chip{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:6px 11px;letter-spacing:.04em}
+.lyrtags .chip:hover{border-color:var(--cue);color:var(--cue)}
+.lyrarea{width:100%;min-height:220px;background:var(--well);border:1px dashed var(--line);border-radius:12px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;padding:14px;resize:vertical}
+.lyrarea::placeholder{color:var(--dim)}
+.lyrarea:focus-visible{outline:2px solid var(--cue);outline-offset:2px}
+.lyrarea .tag{color:var(--cue)}
+.lyrclr{background:none;border:1px solid var(--line);border-radius:6px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:6px 11px;letter-spacing:.08em}
+.lyrclr:hover{color:var(--warn);border-color:var(--warn)}
+
+/* v0.10 — mobile layout */
+.mbar{display:none}
+@media(max-width:640px){
+  .top{padding:14px 16px;flex-wrap:wrap;gap:4px 12px}
+  .top h1{font-size:18px}
+  .top span{font-size:9.5px}
+  .app{padding:14px;gap:16px}
+  .panel{padding:14px}
+  .gcard{padding:13px 12px}
+
+  /* faders: name on its own row, slider + % below */
+  .strip{flex-wrap:wrap;gap:8px 12px}
+  .strip .sn{flex:0 0 100%;min-width:0;max-width:none}
+  .strip input[type=range]{min-width:0}
+
+  /* slots: header row (name · source · lock), value row below */
+  .slot{flex-wrap:wrap;gap:8px 10px;padding:11px 12px}
+  .slot .sname{order:1;flex:1;min-width:0}
+  .slot .src{order:2}
+  .slot .lock{order:3;padding:8px 12px;font-size:11px}
+  .slot .sval{order:4;flex:0 0 100%}
+
+  /* controls: full-width reroll, stretched segments */
+  .reroll{width:100%}
+  .controls .seg{flex:1;min-width:0}
+  .controls .seg button{flex:1;text-align:center;padding:12px 6px;min-width:0}
+  .seg{display:flex}
+  .bassbox select{flex:1;min-width:0}
+  .bassseg{flex:1;display:flex;min-width:0}
+  .bassseg button{flex:1;text-align:center;padding:11px 4px;min-width:0}
+
+  /* bigger slider thumbs for touch */
+  input[type=range]::-webkit-slider-thumb{width:20px;height:30px}
+  input[type=range]::-moz-range-thumb{width:20px;height:30px}
+
+  /* 16px inputs prevent iOS focus zoom */
+  .gsearch,.exadd input,.impbox,.lyrarea{font-size:16px}
+  .exadd input{min-width:0}
+  .exadd button{white-space:nowrap}
+  .lyrrow select{flex:1;min-width:0}
+  .gbtns{flex:1 1 100%;min-width:0}
+  .gbtns .surprise,.gbtns .clearbtn{flex:1}
+
+  /* sticky copy bar */
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:rgba(14,17,22,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    gap:12px;align-items:center}
+  .mbar .chars{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body{padding-bottom:76px}
+  footer{padding-bottom:90px}
+}
+footer{padding:26px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.1em}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1><span class="led"></span>PROMPTDECK</h1>
+  <span>Suno style prompt mixer · v1.1 · local storage</span>
+</div>
+
+<div class="app">
+  <div>
+    <div class="ghead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div class="label" style="margin-bottom:0">Genres — tap up to three (A · B · C)</div>
+      <div class="gbtns" style="display:flex;gap:8px">
+        <button class="surprise" id="surprise">🎲 Surprise</button>
+        <button class="clearbtn" id="clearDeck" title="Reset the whole deck">✕ Clear</button>
+      </div>
+    </div>
+    <input type="text" class="gsearch" id="gSearch" placeholder="⌕ search genres…" aria-label="Search genres">
+    <div class="chips gcats" id="gCats"></div>
+    <div class="genres" id="genres"></div>
+    <div class="gnone" id="gNone" style="display:none">No genres match — clear the search or pick another category</div>
+    <p class="hint">Tap a selected genre again to clear it. 1 genre = solo. 2–3 genres = mix mode with channel faders. The loudest channel sets the base (genre &amp; bpm).</p>
+  </div>
+
+  <div class="console">
+    <div class="panel">
+      <div class="label">Channel faders</div>
+      <div id="mixBody"></div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Sound — locked base, re-rolled character</div>
+      <div class="controls">
+        <button class="reroll" id="reroll">↻ Different sound</button>
+        <div class="seg" id="intensity">
+          <button data-i="1">LIGHT</button>
+          <button data-i="2" class="on">MEDIUM</button>
+          <button data-i="5">RADICAL</button>
+        </div>
+        <span class="seg-note" id="intNote">changes 2–3 elements</span>
+      </div>
+      <div class="bpmbox">
+        <span class="bpmlab">BPM</span>
+        <button class="bpmauto on" id="bpmAuto" aria-pressed="true">AUTO</button>
+        <input type="range" id="bpmSlider" min="40" max="200" step="1" value="120" disabled aria-label="Manual BPM">
+        <span class="bpmval" id="bpmVal"><span class="bpm-def">genre default</span></span>
+      </div>
+      <div class="bassbox">
+        <span class="bpmlab">BASS</span>
+        <select id="bassSel" aria-label="Bass engine">
+          <option value="">AUTO — from genre</option>
+        </select>
+        <div class="bassseg" id="bassAmt">
+          <button data-a="subtle" disabled>SUBTLE</button>
+          <button data-a="forward" class="on" disabled>FORWARD</button>
+          <button data-a="dominant" disabled>DOMINANT</button>
+        </div>
+      </div>
+      <div class="bassbox">
+        <span class="bpmlab">VOX&nbsp;</span>
+        <select id="voxSel" aria-label="Vocal engine">
+          <option value="">AUTO — from genre</option>
+        </select>
+        <div class="bassseg" id="voxAmt">
+          <button data-a="subtle" disabled>SUBTLE</button>
+          <button data-a="forward" class="on" disabled>FORWARD</button>
+          <button data-a="dominant" disabled>DOMINANT</button>
+        </div>
+      </div>
+      <div class="bassbox">
+        <span class="bpmlab">ARR&nbsp;</span>
+        <select id="structSel" aria-label="Arrangement structure">
+          <option value="">AUTO — let Suno decide</option>
+        </select>
+      </div>
+      <div class="bassbox">
+        <span class="bpmlab">MOOD</span>
+        <select id="moodSel" aria-label="Mood engine">
+          <option value="">AUTO — from genre</option>
+        </select>
+        <div class="bassseg" id="moodAmt">
+          <button data-a="subtle" disabled>SUBTLE</button>
+          <button data-a="forward" class="on" disabled>FORWARD</button>
+          <button data-a="dominant" disabled>DOMINANT</button>
+        </div>
+      </div>
+      <div style="height:16px"></div>
+      <div class="slots" id="slots"></div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Your prompt — paste into Suno's style box</div>
+      <div class="out" id="out"><div class="empty">Pick a genre to build your first prompt</div></div>
+      <div class="out-meta">
+        <span class="chars" id="chars"></span>
+        <button class="copy" id="copy">Copy prompt</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Exclude styles — paste into Suno's "exclude styles" box</div>
+      <div class="chips" id="exChips"></div>
+      <div class="exadd">
+        <input type="text" id="exInput" placeholder="custom exclude, e.g. saxophone" maxlength="40" aria-label="Custom exclude term">
+        <button id="exAdd">+ Add</button>
+      </div>
+      <div class="exout" id="exOut" style="display:none">
+        <span class="extxt" id="exTxt"></span>
+        <button class="excopy" id="exCopy">Copy excludes</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Lyrics helper — paste into Suno's lyrics box</div>
+      <div class="lyrrow">
+        <span class="bpmlab">SKELETON</span>
+        <select id="lyrTpl" aria-label="Lyrics structure template">
+          <option value="">— pick a song structure —</option>
+        </select>
+        <button class="lyrclr" id="lyrClear">CLEAR</button>
+      </div>
+      <div class="lyrtags" id="lyrTags"></div>
+      <textarea class="lyrarea" id="lyrArea" spellcheck="false" placeholder="Pick a skeleton above or tap a tag to insert it at the cursor, then write your lines under each tag.
+
+[Verse 1]
+your lyrics here…
+
+[Chorus]
+your hook here…"></textarea>
+      <div class="out-meta">
+        <span class="chars" id="lyrChars"></span>
+        <button class="copy" id="lyrCopy">Copy lyrics</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Deck memory — presets &amp; prompt history</div>
+      <div class="deckrow">
+        <button class="savebtn" id="saveP">★ Save current as preset</button>
+        <button class="iobtn" id="expP">EXPORT JSON</button>
+        <button class="iobtn" id="impP">IMPORT JSON</button>
+        <span class="memnote">presets are saved in this browser — export JSON for backup or another device</span>
+      </div>
+      <textarea class="impbox" id="impBox" rows="3" placeholder="paste exported presets JSON here, then press LOAD PASTED JSON"></textarea>
+      <div class="memlist" id="presetList"><div class="empty" style="padding:14px 0">No presets yet — dial in a sound and save it</div></div>
+      <div class="subhead">Copied prompts (last 8)</div>
+      <div class="memlist" id="histList"><div class="empty" style="padding:14px 0">Copied prompts land here for quick recall</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mbar" id="mbar" style="display:none">
+  <span class="chars" id="mchars"></span>
+  <button class="copy" id="mcopy">Copy prompt</button>
+</div>
+
+<footer>PROMPTDECK v1.1 · prompts avoid artist names (Suno blocks them) · demo build</footer>
+
+<script>
+const SLOTS = ["bass","harmony","rhythm","atmosphere","texture"];
+const SLOT_LABEL = {bass:"Bass", harmony:"Keys / Chords", rhythm:"Drums / Groove", atmosphere:"Atmosphere", texture:"Texture / FX", vocal:"Vocals", structure:"Structure", mood:"Mood"};
+function voxExcludedByUser(){
+  return voxType&&voxType!=='Instrumental'&&exStems().some(st=>['vocal','voice','sing'].some(v=>v.startsWith(st)||st.startsWith(v)));
+}
+function activeSlots(){ const a=[...SLOTS]; if(moodType)a.push("mood"); if(voxType&&!voxExcludedByUser())a.push("vocal"); if(structType)a.push("structure"); return a; }
+
+const G = {
+"Deep House":{bpm:"120–124 bpm",base:"deep house, 122 bpm, smooth hypnotic groove",slots:{
+ bass:["rolling warm sub bass","rubbery analog bassline","deep pulsing bass with subtle slides","round filtered bass groove","dubby low-end bass swells"],
+ harmony:["dusty Rhodes chords","lush detuned pads","soulful organ stabs","warm 7th chord keys","hazy chord washes"],
+ rhythm:["shuffled hi-hats and soft claps","crisp swung house drums","laid-back four-on-the-floor with ghost notes","tight percussion with rimshots","deep kick with sparse snappy snare"],
+ atmosphere:["late-night rooftop mood","underground basement club haze","after-hours introspective feel","warm summer terrace at dusk","rainy city drive ambience"],
+ texture:["analog tape warmth","vinyl crackle layer","subtle sidechain breathing","smoky reverb tails","clean modern polish"]}},
+"Techno":{bpm:"128–134 bpm",base:"driving techno, 130 bpm, dark hypnotic energy",slots:{
+ bass:["relentless rumbling sub","distorted rolling bassline","dry punchy low-end","acid-tinged bass sequence","cavernous bass drones"],
+ harmony:["sparse dissonant stabs","icy minor synth motifs","droning industrial tones","modular bleeps and sequences","dark evolving pad layers"],
+ rhythm:["pounding four-on-the-floor kick","rattling industrial percussion","off-beat metallic hats","tribal-tinged techno drums","stripped-back warehouse groove"],
+ atmosphere:["warehouse rave at 3am","concrete industrial space","tunnel-like claustrophobic tension","cold Berlin winter night","strobe-lit peak-time surge"],
+ texture:["gritty analog distortion","cavern reverb and delay throws","raw unpolished mixdown","hypnotic filter sweeps","metallic resonant edges"]}},
+"Progressive House":{bpm:"124–128 bpm",base:"progressive house, 126 bpm, long evolving builds and euphoric release",slots:{
+ bass:["deep plucked bassline in motion","warm rolling bass groove","melodic bass sequence","pulsing sidechained sub","layered bass with harmonic overtones"],
+ harmony:["shimmering arpeggios","emotive minor-key plucks","wide cinematic pads","cascading melodic layers","bright euphoric lead lines"],
+ rhythm:["steady driving kick with building percussion","crisp claps and rising fills","rolling groove with subtle breaks","tight progressive drum stack","tension-building drum layers"],
+ atmosphere:["sunrise festival mainstage","open-air coastal night","melancholic yet uplifting journey","starlit desert gathering","emotional peak-hour moment"],
+ texture:["polished wide stereo image","airy reverb space","gliding white-noise risers","smooth sidechain pump","glassy modern sound design"]}},
+"R&B":{bpm:"70–95 bpm",base:"modern r&b, 82 bpm, smooth soulful vocals, intimate mood",slots:{
+ bass:["silky sub bass with slides","mellow finger-style bass","808-tinged warm low end","laid-back groovy bassline","soft round bass pockets"],
+ harmony:["jazzy extended-chord keys","dreamy electric piano","plush layered synth pads","neo-soul guitar licks","late-night ambient keys"],
+ rhythm:["crisp snappy trap-influenced drums","slow-grind pocket groove","finger snaps and soft kicks","syncopated hats with ghost snares","minimal heartbeat drums"],
+ atmosphere:["dim candlelit bedroom mood","2am city lights confession","slow rainfall on windows","velvet late-night lounge","nostalgic summer night"],
+ texture:["airy vocal harmonies and ad-libs","tape-saturated warmth","glossy modern mix","lo-fi dusty edges","reverb-soaked intimacy"]}},
+"Chill Deep House":{bpm:"110–118 bpm",base:"chill deep house, 114 bpm, relaxed melodic groove",slots:{
+ bass:["soft rounded sub bass","gentle rolling bassline","warm mellow bass pulse","smooth liquid low end","understated deep bass"],
+ harmony:["dreamy chord swells","tropical-tinged keys","gentle piano motifs","hazy pads with slow attack","warm marimba-like plucks"],
+ rhythm:["relaxed four-on-the-floor","soft brushed hats and snaps","gentle groove with light shuffle","understated minimal drums","breezy percussion touches"],
+ atmosphere:["beach sunset chill","poolside golden hour","lazy sunday morning","calm ocean horizon","hammock daydream mood"],
+ texture:["soft-focus reverb wash","warm analog glue","field-recording seaside details","silky smooth mixdown","subtle vinyl warmth"]}},
+"Phonk":{bpm:"130–160 bpm",base:"drift phonk, 140 bpm, aggressive dark energy",slots:{
+ bass:["distorted booming 808 bass","cowbell-driven bass melody","overdriven sliding 808s","gritty saturated low end","menacing sub pressure"],
+ harmony:["eerie detuned bell melody","dark memphis-style sample chops","sinister minor synth loop","haunting vocal chop motif","cold metallic lead line"],
+ rhythm:["hard-knocking trap drums","rapid rattling hi-hat rolls","punchy kick-snare drift pattern","aggressive percussion with cowbell","relentless double-time groove"],
+ atmosphere:["midnight street drift race","abandoned parking garage","gritty urban menace","adrenaline night chase","smoke-filled underground scene"],
+ texture:["heavy tape distortion","lo-fi crushed fidelity","screwed-down pitched textures","hard clipping aggression","cavern reverb on chops"]}},
+"Lo-fi Hip-Hop":{bpm:"70–90 bpm",base:"lo-fi hip hop, 80 bpm, mellow dusty beat for studying",slots:{
+ bass:["muffled round upright-style bass","soft boom-bap sub","lazy melodic bassline","warm tape-worn bass","gentle pulsing low end"],
+ harmony:["dusty jazz piano chords","warbling nostalgic keys","mellow guitar loops","wistful rhodes voicings","soft vibraphone melodies"],
+ rhythm:["laid-back boom-bap drums","crackly swung drum loop","soft brushed snare groove","head-nod pocket beat","gentle off-kilter drums"],
+ atmosphere:["rainy study room at dusk","quiet library corner","late-night homework glow","cozy cafe window seat","autumn evening solitude"],
+ texture:["vinyl crackle and tape hiss","warm cassette saturation","muffled nostalgic filtering","ambient room noise details","dreamy chorus wobble"]}},
+"Synthwave":{bpm:"85–118 bpm",base:"synthwave, 100 bpm, retro-futuristic 80s neon mood",slots:{
+ bass:["pulsing analog synth bass","driving octave bassline","fat retro moog-style bass","arpeggiated sequenced bass","dark cinematic synth low end"],
+ harmony:["glittering arpeggios","soaring retro lead lines","lush analog pad stacks","nostalgic chord progressions","chrome-bright synth stabs"],
+ rhythm:["gated reverb snare drums","punchy 80s drum machine groove","steady electro pulse","big tom fills and claps","driving motorik beat"],
+ atmosphere:["neon-lit night highway","sunset over a chrome skyline","VHS-era nostalgia","cyberpunk city rain","outrun midnight drive"],
+ texture:["analog tape warmth and flutter","shimmering chorus and delay","wide vintage stereo spread","soft VHS degradation","polished retro-modern blend"]}},
+"Epic Cinematic":{bpm:"60–110 bpm",base:"epic cinematic orchestral, dramatic trailer energy",slots:{
+ bass:["thunderous low brass and basses","pulsing hybrid sub hits","ominous string ostinato low end","earth-shaking taiko-backed bass","dark cello ensemble foundation"],
+ harmony:["soaring heroic string themes","massive brass chord swells","haunting choir harmonies","emotive solo violin over orchestra","triumphant horn melodies"],
+ rhythm:["pounding epic percussion ensemble","battle-drum ostinatos","building snare crescendos","hybrid braams and impact hits","galloping rhythmic strings"],
+ atmosphere:["final battle at dawn","vast mountain-range vista","hero's last stand","ancient kingdom awakening","storm-lit sea voyage"],
+ texture:["huge concert-hall reverb","modern hybrid sound design layers","intimate-to-massive dynamic arc","shimmering high-string air","dark low-end cinematic weight"]}},
+"Neoclassical":{bpm:"60–90 bpm",base:"modern neoclassical, 72 bpm, felt piano and strings, contemplative cinematic mood",slots:{
+ bass:["soft sustained cello foundation","warm double bass swells","low piano octaves with gentle pedal","rounded bowed bass warmth under strings","quiet sub-bass glow beneath the ensemble"],
+ harmony:["felt piano with tender melodic motifs","flowing minimalist piano arpeggios","warm string quartet voicings","hopeful violin lines over piano","gentle layered piano and soft pads"],
+ rhythm:["no drums, phrase-led rubato breathing","soft pulsing piano ostinato","gentle heartbeat-like pulse","calm steady quarter-note motion","light plucked string patterns"],
+ atmosphere:["quiet morning light through tall windows","first snowfall stillness","bittersweet nostalgia turning to hope","open landscape at dawn","tender intimate recital room"],
+ texture:["intimate close-mic piano with pedal and key noise","soft tape warmth and room tone","airy reverb halo around the strings","delicate ambient shimmer","clean modern classical recording"]}},
+"Dark Neoclassical ★":{bpm:"52 bpm largo",base:"dark neo-classical, 52 bpm largo in B minor with suspended rubato; felt piano, harmonium, cello, string quartet, bowed contrabass, bass clarinet, low felt drum, and distant wordless choir",slots:{
+ bass:["bowed double bass swells under sustained cello drones","double bass deep bowed drone","bass clarinet breathing low warm tones","funereal bowed bass with slow soft attacks","deep cello and bass unison drones","harmonium pedal-bass foundation with bellows breath"],
+ harmony:["felt piano fragile motifs over harmonium haze","tintinnabuli-style bell voicings, sacred and still","mournful string quartet voicings with long decays","suspended piano harmonies left ringing","hymn-like harmonium chords under sparse piano","weeping violin laments over quartet swells","minimalist modern classical piano figures"],
+ rhythm:["low felt drum heartbeats in suspended rubato","no drums, phrase-led rubato breathing","sparse felt drum pulses like distant footsteps","slow tolling low percussion","free-time dynamic swells with no fixed grid"],
+ atmosphere:["worn sacred and spacious, voices far behind stone walls","classical sacred drone stillness","intro opens on tape hiss and harmonic drone, cello, bass clarinet, piano, choir, violin and full strings entering in sequence, then decaying back to room tone","empty stone chapel air, choir far behind the walls","grief-laden stillness with breath between phrases","candlelit ruin at midnight, drone like wind through cracks"],
+ texture:["intimate close-mic mix with subtle pedal and mechanical noise","long reverb tails and bellows breath","tape hiss and warm analog decay","room tone, creaking wood and air details","dusty worn recording, soft sacred saturation","minimalist restraint, every note left exposed"]}},
+"Trap":{bpm:"130–150 bpm",base:"trap, 140 bpm, hard-hitting modern energy",slots:{
+ bass:["booming 808 slides","distorted knocking 808s","melodic 808 bass runs","deep clean sub hits","aggressive saturated low end"],
+ harmony:["dark bell melodies","ominous string loops","icy piano motifs","spacey pluck sequences","menacing choir stabs"],
+ rhythm:["rapid hi-hat rolls and triplets","punchy kick-snare bounce","sparse hard-knock groove","stuttering percussion fills","double-time hat patterns"],
+ atmosphere:["late-night city rooftop","dark luxury excess","street-level tension","moody neon underpass","cold winter block energy"],
+ texture:["polished modern trap mix","gritty lo-fi crush","cavern reverb on melodies","hard-clipped aggression","wide cinematic space"]}},
+"Dark Ambient":{bpm:"free tempo",base:"dark ambient, slow evolving drones, cinematic unease",slots:{
+ bass:["cavernous sub drones","tectonic low rumbles","slow-breathing bass swells","abyssal low-end pressure","distant thunder-like lows"],
+ harmony:["dissonant stretched pads","ghostly choir remnants","detuned metallic overtones","frozen glassy harmonics","slow-shifting cluster chords"],
+ rhythm:["no drums, glacial pacing","distant irregular pulses","sparse ritualistic hits","clockwork ticking artifacts","subterranean throbs"],
+ atmosphere:["derelict space station","deep cave system silence","post-industrial wasteland","haunted arctic expanse","ancient ruin at nightfall"],
+ texture:["granular decayed textures","field recordings of wind and metal","tape-warped decay","cavernous endless reverb","static and radio interference"]}},
+"Country / Americana":{bpm:"80–120 bpm",base:"modern country americana, heartfelt storytelling vocals",slots:{
+ bass:["warm upright bass groove","round electric bass pocket","driving root-note bassline","soft supportive low end","boom-chick bass movement"],
+ harmony:["twangy telecaster licks","warm acoustic strumming","weeping pedal steel","honky-tonk piano touches","banjo and mandolin layers"],
+ rhythm:["train-beat brushed drums","steady heartland backbeat","boot-stomp and claps","loose roadhouse shuffle","soft ballad drums"],
+ atmosphere:["dusty backroad at sunset","small-town front porch","neon roadside bar","open highway freedom","campfire under the stars"],
+ texture:["live-band room warmth","vintage tube saturation","polished nashville sheen","raw americana grit","spacious open-air mix"]}},
+"Dance Pop":{bpm:"110–128 bpm",base:"dance pop, 120 bpm, catchy hooks, radio-ready energy",slots:{
+ bass:["bouncy synth bass groove","punchy disco-influenced bassline","deep clean club sub","funky plucked bass","driving root-octave bass"],
+ harmony:["bright stacked synth chords","glossy piano hooks","funky guitar chops","euphoric festival leads","shimmering pop pads"],
+ rhythm:["tight four-on-the-floor pop drums","clap-driven dance groove","punchy modern pop percussion","disco hats and tambourine","drop-focused rhythm builds"],
+ atmosphere:["summer festival anthem","glittering nightclub floor","carefree road-trip singalong","confetti-drop celebration","city lights weekend rush"],
+ texture:["radio-polished wide mix","sparkling ear-candy details","vocal-chop accents","clean punchy master","airy modern sheen"]}},
+"Rock":{bpm:"100–140 bpm",base:"modern rock, 124 bpm, energetic guitar-driven anthems",slots:{
+ bass:["driving picked electric bass","gritty overdriven bass guitar","rumbling root-note bass under the guitars","melodic bass runs with pick attack","fat round bass locked to the kick"],
+ harmony:["crunchy power-chord rhythm guitars","soaring lead guitar melodies","jangly open-chord verses","layered wall-of-guitars harmonies","warm organ pads beneath the guitars"],
+ rhythm:["punchy live rock drums with big fills","driving straight-ahead backbeat","half-time verses exploding into full-time choruses","crashing cymbals and tom-heavy grooves","tight punk-tinged drumming"],
+ atmosphere:["packed arena singalong energy","garage-band raw urgency","open-road windows-down freedom","rain-soaked stadium encore","rebellious basement show sweat"],
+ texture:["warm tube-amp saturation","live room ambience and crowd air","feedback swells between sections","polished radio-rock sheen","raw analog grit"]}},
+"Pop":{bpm:"100–120 bpm",base:"polished pop, 112 bpm, catchy hooks and bright energy",slots:{
+ bass:["punchy synth bass hooks","smooth round pop bass","bouncing octave bassline","warm sub bass under bright synths","funky slap-tinged bass accents"],
+ harmony:["sparkling synth chord stacks","bright piano hooks","plucky guitar riffs","glossy layered pads","earworm lead synth melodies"],
+ rhythm:["tight punchy pop drums","clap-and-snap driven groove","four-on-the-floor chorus lift","syncopated verse percussion","big gated chorus drums"],
+ atmosphere:["summer top-down drive","glitter and confetti celebration","first-crush butterflies","city lights weekend energy","feel-good morning sunshine"],
+ texture:["radio-ready polished master","shimmering ear-candy details","vocal-chop sprinkles","airy wide modern mix","subtle retro synth warmth"]}},
+"Latin":{bpm:"90–105 bpm",base:"latin pop, 96 bpm, sunny reggaeton-influenced groove",slots:{
+ bass:["deep reggaeton sub bass","syncopated latin bass tumbao","warm round bass locked to the dembow","plucked baby-bass style lines","smooth melodic low end"],
+ harmony:["nylon-string spanish guitar phrases","bright latin piano montunos","tropical marimba and steel-pan touches","romantic string swells","brassy horn section stabs"],
+ rhythm:["dembow reggaeton groove","crisp congas and timbales percussion","clave-driven syncopation","festive salsa-tinged breaks","laid-back tropical shuffle"],
+ atmosphere:["beach party at golden hour","warm havana street night","carnival crowd euphoria","rooftop fiesta under string lights","slow dance on a summer night"],
+ texture:["sun-soaked warm mix","live percussion room feel","glossy modern latin polish","vintage tropical tape warmth","airy ocean-breeze space"]}},
+"Jazz":{bpm:"80–140 bpm",base:"smooth jazz quartet, relaxed swing feel, warm and intimate",slots:{
+ bass:["walking upright bass lines","woody double bass with soft attack","melodic bass fills between phrases","laid-back two-feel bass","deep supportive acoustic bass"],
+ harmony:["lush extended piano voicings","warm hollow-body guitar comping","smoky saxophone melodies","muted trumpet phrases","rich bebop-influenced lines"],
+ rhythm:["brushed swing drums","gentle ride-cymbal pulse","subtle syncopated comping hits","slow ballad brushwork","medium swing with crisp accents"],
+ atmosphere:["dim smoky jazz club","rainy late-night city bar","sunday afternoon vinyl session","candlelit supper club","after-midnight blue mood"],
+ texture:["warm analog room tone","vintage ribbon-mic character","soft tape saturation","intimate close-mic detail","classic 50s-era studio warmth"]}},
+"House":{bpm:"122–128 bpm",base:"classic house, 125 bpm, uplifting soulful groove",slots:{
+ bass:["bouncy classic house bassline","warm plucked bass groove","deep piano-house sub","funky filtered disco bass","rolling organ bass stabs"],
+ harmony:["uplifting piano house chords","classic organ stabs","soulful vocal-sample chops","bright disco string loops","warm filtered chord loops"],
+ rhythm:["classic four-on-the-floor with open hats","shuffling vintage drum-machine groove","funky swung percussion","claps on the two and four","filtered disco-loop groove"],
+ atmosphere:["sweaty joyful club floor","90s warehouse euphoria","sunny block-party vibes","hands-in-the-air peak time","feel-good summer festival"],
+ texture:["classic sampler grit","warm vinyl loop dust","pumping sidechain glue","bright analog console sheen","old-school 12-inch character"]}},
+"Metal":{bpm:"120–180 bpm",base:"heavy metal, 150 bpm, aggressive powerful riffing",slots:{
+ bass:["thundering distorted bass guitar","tight palm-muted bass chugs","growling low-tuned bass","bass locked with double-kick drums","grinding overdriven low end"],
+ harmony:["crushing down-tuned riffs","harmonized twin lead guitars","dark tremolo-picked passages","ominous clean guitar interludes","shredding solo flourishes"],
+ rhythm:["relentless double-kick drumming","galloping thrash grooves","breakdown-heavy syncopation","blast-beat surges","half-time crushing grooves"],
+ atmosphere:["moshpit fury","storm-darkened battlefield","industrial furnace heat","epic mountain-top defiance","midnight ritual intensity"],
+ texture:["wall of high-gain guitars","tight modern metal production","raw analog aggression","cavernous dark reverb","punishing compressed punch"]}},
+"Classical":{bpm:"free tempo",base:"classical orchestral, elegant expressive performance",slots:{
+ bass:["warm cello section foundation","deep double bass pizzicato","sustained low string pedal tones","noble low brass support","gentle bassoon undercurrent"],
+ harmony:["graceful string quartet writing","lyrical woodwind melodies","elegant solo piano passages","rich full-orchestra harmonies","delicate harp arpeggios"],
+ rhythm:["flowing rubato phrasing","stately minuet pulse","gentle waltz lilt","dramatic accelerando passages","precise baroque momentum"],
+ atmosphere:["grand concert hall evening","sunlit palace ballroom","pastoral countryside morning","moonlit chamber recital","romantic-era emotional sweep"],
+ texture:["natural concert-hall acoustics","warm vintage orchestral recording","intimate chamber closeness","wide symphonic depth","airy audiophile clarity"]}}
+};
+
+const names = Object.keys(G);
+const CH = ['A','B','C'];
+const CH_CLASS = {A:'a',B:'b',C:'c'};
+let channels = []; // array of {name, weight}
+let intensity = 2;
+let current = {}; // slot -> {text, ch}
+let locked = new Set();
+let changedNow = new Set();
+
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const rndDiff = (a,not) => { if(a.length<2) return a[0]; let x; do{x=rnd(a)}while(x===not); return x; };
+
+// modifier pools per slot type — multiply variety combinatorially
+const MODS = {
+ bass:["slightly detuned","with longer decay","sitting deeper in the mix","with a darker tone","more restrained","with extra weight","gently pulsing","with softer attack","barely moving","slowly swelling"],
+ harmony:["with wider spacing","left ringing longer","sparser than usual","with gentle dissonance","in a higher register","half-buried in reverb","with slower attack","more fragile","slowly unfolding","with darker color"],
+ rhythm:["with looser timing","slightly behind the beat","more minimal","with extra ghost notes","softer and rounder","with occasional dropouts","tighter and drier","with subtle swing","gradually thinning out","barely present"],
+ atmosphere:["at a greater distance","colder","warmer and closer","with more air","fading in and out","heavier with haze","under low light","with a hint of unease","slowly dissolving","wrapped in silence"],
+ texture:["more pronounced","barely audible","slowly intensifying","with added grain","smoother","rawer","drifting in the background","wrapping the whole mix","flickering unevenly","aging over time"],
+ vocal:["drenched in reverb","dry and upfront","doubled in octaves","with delicate harmonies","half-whispered","with long delay throws","raw and unprocessed","with subtle autotune shimmer","fading behind the instruments","full of quiet emotion"],
+ mood:["growing stronger toward the end","woven through every section","surfacing in the quiet moments","held with restraint","swelling and receding","understated but constant","blooming in the chorus","with a flicker of its opposite underneath"]
+};
+const JOIN = {bass:["layered with","paired with","underpinned by"],harmony:["woven with","alongside","beneath"],rhythm:["alongside","accented by","trading with"],atmosphere:["blending into","drifting toward","melting into"],texture:["dusted with","wrapped in","laced with"],vocal:["answered by","trading with","echoed by"],mood:["shading into","tinged with","edged with"]};
+
+// --- coherence engine (v1.0): keeps prompts free of contradictions, exclude leaks and word spam ---
+const VOCAL_RE=/\b(vocals?|voices?|choir|vocalise|singers?|sung|singing|rap|spoken|whisper|whispered|murmurs|duet|falsetto|ad-libs)\b/i;
+function exStems(){return excludes.map(e=>e.toLowerCase().trim().replace(/s$/,'')).filter(Boolean);}
+function negStems(txts){
+  const st=[];
+  txts.forEach(t=>String(t).split(/,\s*/).forEach(seg=>{
+    const s=seg.trim().toLowerCase();
+    const m=s.match(/^(?:no|without)\s+([a-z0-9 \-]+)/);
+    if(m)m[1].split(/\s+/).forEach(w=>{if(w.length>3)st.push(w.replace(/s$/,''))});
+    if(/^bassless|^low end removed/.test(s))st.push('bass');
+  }));
+  return st;
+}
+function segsHit(t,stems){
+  if(!stems.length)return false;
+  return String(t).split(/,\s*/).some(seg=>{
+    const s=seg.trim().toLowerCase();
+    if(/^(no |without |bassless|low end removed|instrumental)/.test(s))return false;
+    return stems.some(st=>st&&s.includes(st));
+  });
+}
+function isBanned(t){
+  if(segsHit(t,exStems()))return true;
+  if(voxType==='Instrumental'&&VOCAL_RE.test(t))return true;
+  if(voxType&&voxType!=='Instrumental'&&/\binstrumental\b/i.test(t))return true;
+  return false;
+}
+
+const hist = {}; // slot -> recent outputs (repeat-avoidance memory)
+const isNeg = t => /^no\s|^bassless|^low end removed/i.test(t);
+const shareWord=(a,b)=>{
+  const wa=new Set((a.toLowerCase().match(/[a-z\-]{4,}/g)||[]).filter(w=>!DEDUP_STOP.has(w)));
+  return (b.toLowerCase().match(/[a-z\-]{4,}/g)||[]).some(w=>!DEDUP_STOP.has(w)&&wa.has(w));
+};
+function makeVariantOpts(opts,s,prev){
+  const h=(hist[s]=hist[s]||[]);
+  for(let tries=0;tries<24;tries++){
+    let t; const r=Math.random();
+    const a0=rnd(opts);
+    if(r<0.4||isNeg(a0)) t=a0; // negations stay pure — no mods, no combos
+    else if(r<0.78){const m=rnd(MODS[s]); t=shareWord(a0,m)?a0:a0+", "+m;}
+    else {const b=rndDiff(opts,a0); t=(isNeg(b)||shareWord(a0,b))?a0:a0+", "+rnd(JOIN[s])+" "+b;}
+    if(t!==prev && !h.includes(t) && !isBanned(t)){h.push(t);if(h.length>12)h.shift();return t;}
+  }
+  return rndDiff(opts,prev);
+}
+function makeVariant(g,s,prev){
+  return makeVariantOpts(g.slots[s],s,prev);
+}
+
+// BASS ENGINE — cross-genre bass palettes
+const BASS_LIB = {
+"Deep Sub":["deep rolling sub bass","pure sine sub bass foundation","warm rounded sub pulses","cavernous sub bass weight","slow-breathing sub swells"],
+"808":["booming 808 bass with slides","melodic 808 bass runs","distorted knocking 808s","long sustained 808 glides","tuned 808 hits with pitch bends"],
+"Reese / Neuro":["growling reese bass","modulated neuro bass movement","wide detuned reese swells","gritty morphing bass textures"],
+"Analog Synth":["fat analog moog-style bassline","pulsing vintage synth bass","rubbery analog bass groove","arpeggiated sequenced synth bass"],
+"Acid 303":["squelchy acid 303 bassline","resonant acid bass sequence","hypnotic 303 filter-sweep bass"],
+"Bowed Drone":["double bass deep bowed drone","sustained cello and double bass drones","funereal bowed low strings","subterranean arco bass swells"],
+"Upright / Acoustic":["warm upright bass groove","soft fingered acoustic bass","walking upright bass touches","woody double bass plucks"],
+"Dub Bass":["heavy dub bassline with space between notes","deep dub bass swells with echo","meditative rolling dub low end"],
+"No Bass":["no bass, hollow low end left empty","bassless arrangement, airy and suspended","low end removed, weightless space"]
+};
+const BASS_AMT = {subtle:", sitting low and subtle in the mix",forward:"",dominant:", dominating the low end of the mix"};
+function engineExcluded(name){return !!name&&exStems().some(st=>st&&name.toLowerCase().includes(st));}
+let bassType=null, bassAmt='forward';
+function bassVariant(prev){
+  let t=makeVariantOpts(BASS_LIB[bassType],'bass',prev);
+  if(bassAmt!=='forward') t=t.replace(/, sitting deeper in the mix$/,'');
+  return t+BASS_AMT[bassAmt];
+}
+
+// VOX ENGINE — cross-genre vocal palettes
+const VOX_LIB = {
+"Instrumental":["instrumental, no vocals","purely instrumental arrangement","no vocals, instruments carry the melody"],
+"Airy Female":["airy ethereal female vocals","breathy floating female voice","soft angelic female vocals","dreamlike female vocals gliding over the mix"],
+"Soulful Female":["soulful powerful female vocals","warm expressive female voice with runs","gospel-tinged female vocals","emotive female vocals with rich vibrato"],
+"Smooth Male":["smooth velvety male vocals","warm intimate male voice","soft crooning male vocals","mellow male vocals with gentle falsetto touches"],
+"Deep Male":["deep resonant male vocals","dark baritone male voice","low brooding male vocals","gravelly deep male vocals"],
+"Raspy Male":["raspy raw male vocals","gritty worn male voice","husky emotional male vocals","rough-edged male vocals full of character"],
+"Duet":["male and female duet vocals trading lines","intertwined male-female harmonies","call-and-response duet vocals","tender duet with layered harmonies"],
+"Wordless Choir":["distant wordless choir","haunting choir vocalise","layered ooh-and-ahh choir textures","sacred wordless choral swells"],
+"Whispered":["whispered ASMR-like vocals","hushed close-mic whisper vocals","fragile half-spoken whispers","intimate breathy spoken murmurs"],
+"Rap / Spoken":["confident rap verses","laid-back melodic rap flow","spoken-word passages over the beat","rhythmic double-time rap delivery"]
+};
+const VOX_AMT = {subtle:", tucked back in the mix",forward:"",dominant:", front and center above everything"};
+let voxType=null, voxAmt='forward';
+function voxVariant(prev){
+  const t=makeVariantOpts(VOX_LIB[voxType],'vocal',prev);
+  return voxType==="Instrumental" ? t : t+VOX_AMT[voxAmt];
+}
+
+// ARR ENGINE — track structure palettes
+const STRUCT_LIB = {
+"Radio Arc":["classic verse-chorus structure with a final lifted chorus","tight 3-minute radio arrangement","verse-chorus-bridge structure building to a big last chorus"],
+"Slow Build":["gradual build from a minimal intro to a full arrangement","long tension build releasing into a euphoric climax","slowly layering elements toward a late peak"],
+"Drop Focused":["short intro leading into a huge drop","two big drops with a stripped breakdown between them","drop-centered arrangement with rising tension before each drop"],
+"DJ Friendly":["extended DJ-friendly intro and outro","long mixable intro, steady middle section, clean outro","club arrangement with a stripped 16-bar intro and outro"],
+"Ambient Flow":["no fixed structure, freely evolving throughout","continuous flowing arrangement without clear sections","one long slowly evolving movement"],
+"Cinematic Arc":["intimate quiet opening swelling to a massive finale","three-act cinematic build and resolution","quiet-loud-quiet dynamic arc with an emotional peak"],
+"Loop / Beat Tape":["hypnotic looping arrangement with subtle variation","beat-tape style loop with small evolving changes","repetitive meditative loop structure"]
+};
+const STRUCT_MODS=["with a false ending","opening cold with no intro","with a stripped-back bridge in the middle","with a sudden silent pause before the finale","ending abruptly on the last hit","with a long dissolving outro","with one unexpected key change near the end"];
+let structType=null;
+function structVariant(prev){
+  const opts=STRUCT_LIB[structType];
+  for(let t=0;t<24;t++){
+    const x=Math.random()<0.55?rnd(opts):rnd(opts)+", "+rnd(STRUCT_MODS);
+    if(x!==prev) return x;
+  }
+  return rnd(opts);
+}
+
+// MOOD ENGINE — emotional coloring palettes
+const MOOD_LIB = {
+"Happy / Uplifting":["joyful uplifting energy","bright optimistic feel","carefree sunlit happiness","warm feel-good positivity","triumphant smiling energy"],
+"Dark":["dark brooding mood","ominous shadowy tension","cold menacing undercurrent","sinister heavy atmosphere","bleak unsettling edge"],
+"Nostalgic":["wistful nostalgic longing","bittersweet memories of summers past","faded-photograph nostalgia","warm homesick remembrance","golden-hour nostalgia"],
+"Melancholic":["quiet melancholic sadness","aching tender melancholy","sorrowful introspective mood","rain-soaked heavy heart","gentle mournful stillness"],
+"Epic / Heroic":["epic triumphant grandeur","heroic soaring emotion","larger-than-life dramatic sweep","victorious rising spirit","awe-inspiring vastness"],
+"Dreamy":["dreamy floating haze","weightless surreal calm","half-asleep drifting mood","soft-focus dreamlike wonder","gentle hypnotic drift"],
+"Aggressive":["raw aggressive intensity","furious relentless drive","confrontational explosive energy","seething barely-contained tension","adrenaline-fueled aggression"],
+"Romantic":["tender romantic warmth","intimate loving glow","heart-fluttering romance","slow-burning passionate mood","candlelit romantic intimacy"],
+"Mysterious":["mysterious enigmatic aura","cryptic shadowy intrigue","unresolved haunting mystery","secretive midnight curiosity","foggy sense of unanswered questions"],
+"Playful":["playful mischievous bounce","quirky lighthearted fun","cheeky tongue-in-cheek energy","bouncy cartoonish charm","grinning carefree swagger"]
+};
+const MOOD_AMT = {subtle:", as a gentle undertone",forward:"",dominant:", drenching the entire track"};
+let moodType=null, moodAmt='forward';
+function moodVariant(prev){
+  if(moodAmt==='forward') return makeVariantOpts(MOOD_LIB[moodType],'mood',prev);
+  // with an amount suffix, keep the phrase plain so mods can't contradict it
+  const prevPlain=prev?prev.split(',')[0]:null;
+  return rndDiff(MOOD_LIB[moodType],prevPlain)+MOOD_AMT[moodAmt];
+}
+
+const genresEl = document.getElementById('genres');
+names.forEach(n=>{
+  const b=document.createElement('button');
+  b.className='gcard'; b.innerHTML=`${n}<small>${G[n].bpm}</small><span class="ch"></span>`;
+  b.onclick=()=>pick(n);
+  b.dataset.name=n;
+  genresEl.appendChild(b);
+});
+
+// GENRE SEARCH & CATEGORY FILTER
+const GTAGS = {
+"Deep House":["electronic"],"Techno":["electronic"],"Progressive House":["electronic"],
+"R&B":["urban","chill"],"Chill Deep House":["electronic","chill"],"Phonk":["urban","electronic"],
+"Lo-fi Hip-Hop":["urban","chill"],"Synthwave":["electronic"],"Epic Cinematic":["orchestral"],
+"Neoclassical":["orchestral","chill"],"Dark Neoclassical ★":["orchestral","chill"],
+"Trap":["urban"],"Dark Ambient":["chill","orchestral"],"Country / Americana":["live"],
+"Dance Pop":["electronic"],"Rock":["live"],"Pop":["electronic"],"Latin":["urban","live"],
+"Jazz":["live","chill"],"House":["electronic"],"Metal":["live"],"Classical":["orchestral"]
+};
+const GCATS=["all","electronic","urban","live","orchestral","chill"];
+let gQuery='', gCat='all';
+const gCatsEl=document.getElementById('gCats');
+GCATS.forEach(c=>{
+  const b=document.createElement('button');
+  b.className='chip'+(c==='all'?' on':''); b.textContent=c;
+  b.onclick=()=>{gCat=c;gCatsEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.textContent===c));applyGenreFilter();};
+  gCatsEl.appendChild(b);
+});
+document.getElementById('gSearch').addEventListener('input',e=>{gQuery=e.target.value.trim().toLowerCase();applyGenreFilter();});
+function applyGenreFilter(){
+  let visible=0;
+  document.querySelectorAll('.gcard').forEach(b=>{
+    const n=b.dataset.name;
+    const selected=channels.some(c=>c.name===n);
+    const matchQ=!gQuery||n.toLowerCase().includes(gQuery);
+    const matchC=gCat==='all'||(GTAGS[n]||[]).includes(gCat);
+    const show=selected||(matchQ&&matchC);
+    b.style.display=show?'':'none';
+    if(show)visible++;
+  });
+  document.getElementById('gNone').style.display=visible?'none':'block';
+}
+
+function pick(n){
+  const i=channels.findIndex(c=>c.name===n);
+  if(i>=0){channels.splice(i,1);}
+  else if(channels.length<3){channels.push({name:n,weight:50});}
+  else {channels[2]={name:n,weight:50};}
+  locked.clear();
+  buildFresh();
+  paint();
+}
+
+function normWeights(){
+  const sum=channels.reduce((s,c)=>s+c.weight,0)||1;
+  return channels.map(c=>c.weight/sum);
+}
+
+function slotAssign(){
+  // distribute the 5 slots among channels proportionally to weights (largest remainder), min 1 each
+  const res={};
+  if(channels.length===0) return res;
+  if(channels.length===1){SLOTS.forEach(s=>res[s]=0);return res;}
+  const w=normWeights();
+  let counts=w.map(x=>Math.floor(x*5));
+  let rem=5-counts.reduce((a,b)=>a+b,0);
+  const order=w.map((x,i)=>({i,frac:x*5-Math.floor(x*5)})).sort((p,q)=>q.frac-p.frac);
+  for(let k=0;k<rem;k++)counts[order[k%order.length].i]++;
+  // guarantee min 1 per channel
+  for(let i=0;i<counts.length;i++){
+    while(counts[i]===0){const j=counts.indexOf(Math.max(...counts));counts[j]--;counts[i]++;}
+  }
+  const seq=["bass","harmony","rhythm","atmosphere","texture"];
+  let idx=0;
+  counts.forEach((c,chI)=>{for(let k=0;k<c;k++){res[seq[idx]]=chI;idx++;}});
+  return res;
+}
+
+function primaryIdx(){
+  const w=normWeights();
+  return w.indexOf(Math.max(...w));
+}
+
+function buildFresh(){
+  current={}; changedNow.clear();
+  if(channels.length===0) return;
+  const asn=slotAssign();
+  SLOTS.forEach(s=>{
+    const chI=asn[s];
+    const g=G[channels[chI].name];
+    if(s==='bass' && bassType && !engineExcluded(bassType)) current[s]={text:bassVariant(),ch:-1};
+    else current[s]={text:makeVariant(g,s),ch:chI};
+  });
+  if(moodType) current['mood']={text:moodVariant(),ch:-4};
+  if(voxType&&!voxExcludedByUser()) current['vocal']={text:voxVariant(),ch:-2};
+  if(structType) current['structure']={text:structVariant(),ch:-3};
+  coherencePass();
+}
+
+function buildFreshKeepLocks(){
+  const keep={};locked.forEach(s=>keep[s]=current[s]);
+  buildFresh();
+  Object.entries(keep).forEach(([s,v])=>current[s]=v);
+}
+
+function reroll(){
+  if(channels.length===0) return;
+  changedNow.clear();
+  const free=activeSlots().filter(s=>!locked.has(s));
+  const n=Math.min(intensity===5?free.length:(intensity===2?(Math.random()<.5?2:3):1),free.length);
+  const shuffled=[...free].sort(()=>Math.random()-.5).slice(0,n);
+  const asn=slotAssign();
+  shuffled.forEach(s=>{
+    if(s==='vocal'){current[s]={text:voxVariant(current[s]?.text),ch:-2};changedNow.add(s);return;}
+    if(s==='structure'){current[s]={text:structVariant(current[s]?.text),ch:-3};changedNow.add(s);return;}
+    if(s==='mood'){current[s]={text:moodVariant(current[s]?.text),ch:-4};changedNow.add(s);return;}
+    const chI=asn[s];
+    const g=G[channels[chI].name];
+    if(s==='bass' && bassType && !engineExcluded(bassType)) current[s]={text:bassVariant(current[s]?.text),ch:-1};
+    else current[s]={text:makeVariant(g,s,current[s]?.text),ch:chI};
+    changedNow.add(s);
+  });
+  coherencePass();
+  paint();
+}
+
+function slotRegen(s,prev){
+  if(s==='vocal')return {text:voxVariant(prev),ch:-2};
+  if(s==='structure')return {text:structVariant(prev),ch:-3};
+  if(s==='mood')return {text:moodVariant(prev),ch:-4};
+  const asn=slotAssign();
+  const chI=asn[s]; const g=G[channels[chI].name];
+  if(s==='bass'&&bassType&&!engineExcluded(bassType))return {text:bassVariant(prev),ch:-1};
+  return {text:makeVariant(g,s,prev),ch:chI};
+}
+const DEDUP_STOP=new Set(['with','from','into','over','under','than','like','style','music']);
+function coherencePass(){
+  if(channels.length===0)return;
+  for(let round=0;round<3;round++){
+    let changed=false;
+    const slots=activeSlots().filter(s=>current[s]);
+    // a) contradictions: "no X" (in any slot or base) vs X elsewhere; + exclude leaks
+    const texts=slots.map(s=>current[s].text);
+    const banStems=[...negStems([...texts,G[channels[primaryIdx()].name].base]),...exStems()];
+    slots.forEach(s=>{
+      if(locked.has(s))return;
+      if(segsHit(current[s].text,banStems)||isBanned(current[s].text)){
+        for(let k=0;k<10;k++){
+          const c=slotRegen(s,current[s].text);
+          if(!segsHit(c.text,banStems)&&!isBanned(c.text)){current[s]=c;changed=true;break;}
+        }
+      }
+    });
+    // b) word spam: same significant word ≥3 times across base+slots — thin it out
+    const cnt={};
+    const baseTxt=cleanBase(basePrompt(),negStems(texts)).toLowerCase();
+    const baseWords={};
+    (baseTxt.match(/[a-z\-]{4,}/g)||[]).forEach(w=>{if(!DEDUP_STOP.has(w)){cnt[w]=(cnt[w]||0)+1;baseWords[w]=(baseWords[w]||0)+1;}});
+    slots.forEach(s=>{(current[s].text.toLowerCase().match(/[a-z\-]{4,}/g)||[]).forEach(w=>{if(!DEDUP_STOP.has(w))cnt[w]=(cnt[w]||0)+1;});});
+    Object.keys(cnt).filter(w=>cnt[w]>=3).forEach(w=>{
+      let seen=Math.min(baseWords[w]||0,2);
+      slots.forEach(s=>{
+        if(!current[s].text.toLowerCase().includes(w))return;
+        seen++;
+        if(seen<3||locked.has(s))return;
+        for(let k=0;k<10;k++){
+          const c=slotRegen(s,current[s].text);
+          if(!c.text.toLowerCase().includes(w)&&!isBanned(c.text)&&!segsHit(c.text,banStems)){current[s]=c;changed=true;break;}
+        }
+      });
+    });
+    if(!changed)break;
+  }
+}
+
+let bpmManual=null; // null = auto (genre default)
+
+function basePrompt(){
+  const p=primaryIdx();
+  let base=G[channels[p].name].base;
+  if(bpmManual!==null){
+    if(/\d+\s*bpm/.test(base)) base=base.replace(/\d+\s*bpm/, bpmManual+" bpm");
+    else base+=`, ${bpmManual} bpm`;
+  }
+  const others=channels.filter((_,i)=>i!==p).map(c=>c.name.toLowerCase().replace(/\s*★\s*/g,'').trim());
+  if(others.length===1) base+=`, fused with ${others[0]} elements`;
+  if(others.length===2) base+=`, fused with ${others[0]} and ${others[1]} elements`;
+  return base;
+}
+
+function cleanBase(b,negs){
+  const stems=[...exStems(),...negs];
+  return b.split(/,\s*/).filter(seg=>{
+    const t=seg.trim().toLowerCase();
+    if(/^(no |without )/.test(t))return true;
+    if(stems.some(st=>st&&t.includes(st)))return false;
+    if(voxType==='Instrumental'&&VOCAL_RE.test(seg))return false;
+    return true;
+  }).join(', ');
+}
+function promptText(){
+  if(channels.length===0) return "";
+  const parts=activeSlots().map(s=>current[s]?current[s].text:"").filter(Boolean);
+  return cleanBase(basePrompt(),negStems(parts))+", "+parts.join(", ");
+}
+
+function paint(){
+  coherencePass();
+  document.querySelectorAll('.gcard').forEach(b=>{
+    const i=channels.findIndex(c=>c.name===b.dataset.name);
+    b.classList.toggle('selA',i===0);
+    b.classList.toggle('selB',i===1);
+    b.classList.toggle('selC',i===2);
+    b.querySelector('.ch').textContent = i>=0?('CH '+CH[i]):'';
+  });
+  applyGenreFilter();
+
+  const mixBody=document.getElementById('mixBody');
+  if(channels.length>=2){
+    const p=primaryIdx();
+    const w=normWeights();
+    mixBody.innerHTML='<div class="strips">'+channels.map((c,i)=>`
+      <div class="strip ${CH_CLASS[CH[i]]}">
+        <span class="sn">${c.name}${i===p?' ★':''}</span>
+        <input type="range" min="10" max="100" step="5" value="${c.weight}" data-i="${i}" aria-label="Weight of ${c.name}">
+        <span class="pct">${Math.round(w[i]*100)}%</span>
+      </div>`).join('')+'</div>'+
+      '<div class="mix-note">★ loudest channel sets the base · slots split by weight</div>';
+    mixBody.querySelectorAll('input').forEach(inp=>{
+      inp.oninput=e=>{channels[+e.target.dataset.i].weight=+e.target.value;buildFreshKeepLocks();paint();};
+    });
+  } else if(channels.length===1){
+    mixBody.innerHTML=`<span class="mix-off">Solo mode — <b style="color:var(--amber)">${channels[0].name}</b>. Pick a second and third genre to unlock the faders.</span>`;
+  } else {
+    mixBody.innerHTML=`<span class="mix-off">Pick a genre on the left to power up the deck.</span>`;
+  }
+
+  const slotsEl=document.getElementById('slots');
+  slotsEl.innerHTML='';
+  if(channels.length){
+    activeSlots().forEach(s=>{
+      const c=current[s];
+      if(!c) return;
+      const d=document.createElement('div');
+      d.className='slot'+(changedNow.has(s)?' changed':'');
+      const eng=c.ch===-1?'BASS ENG':(c.ch===-2?'VOX ENG':(c.ch===-3?'ARR ENG':(c.ch===-4?'MOOD ENG':null)));
+      d.innerHTML=`<span class="sname">${SLOT_LABEL[s]}</span>
+        <span class="sval">${c.text}</span>
+        ${channels.length>1||eng?`<span class="src ${eng?'x':CH_CLASS[CH[c.ch]]}">${eng||'CH '+CH[c.ch]}</span>`:''}
+        <button class="lock ${locked.has(s)?'on':''}" aria-label="Lock ${SLOT_LABEL[s]}">${locked.has(s)?'LOCKED':'LOCK'}</button>`;
+      d.querySelector('.lock').onclick=()=>{locked.has(s)?locked.delete(s):locked.add(s);paint();};
+      slotsEl.appendChild(d);
+    });
+  }
+
+  const out=document.getElementById('out');
+  const chars=document.getElementById('chars');
+  const mbar=document.getElementById('mbar');
+  const mchars=document.getElementById('mchars');
+  if(channels.length){
+    const _negs=negStems(activeSlots().filter(s=>current[s]).map(s=>current[s].text));
+    out.innerHTML=cleanBase(basePrompt(),_negs)+", "+activeSlots().filter(s=>current[s]).map(s=>{
+      const t=current[s].text;
+      return changedNow.has(s)?`<span class="hl">${t}</span>`:t;
+    }).join(", ");
+    const len=promptText().length;
+    chars.textContent=`${len} chars · Suno style box limit ≈1000`;
+    chars.classList.toggle('warn',len>1000);
+    mbar.style.display='';
+    mchars.textContent=`${len} / ≈1000 chars`;
+    mchars.classList.toggle('warn',len>1000);
+  } else {
+    out.innerHTML='<div class="empty">Pick a genre to build your first prompt</div>';
+    chars.textContent='';
+    mbar.style.display='none';
+  }
+}
+
+document.getElementById('reroll').onclick=reroll;
+document.querySelectorAll('#intensity button').forEach(b=>{
+  b.onclick=()=>{
+    intensity=+b.dataset.i;
+    document.querySelectorAll('#intensity button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.getElementById('intNote').textContent = intensity===1?'changes 1 element':(intensity===2?'changes 2–3 elements':'changes everything except the base');
+  };
+});
+const bpmAutoBtn=document.getElementById('bpmAuto');
+const bpmSlider=document.getElementById('bpmSlider');
+const bpmVal=document.getElementById('bpmVal');
+
+function genreDefaultBpm(){
+  if(!channels.length) return 120;
+  const m=G[channels[primaryIdx()].name].base.match(/(\d+)\s*bpm/);
+  return m?+m[1]:120;
+}
+function paintBpm(){
+  if(bpmManual===null){
+    bpmAutoBtn.classList.add('on');bpmAutoBtn.setAttribute('aria-pressed','true');
+    bpmSlider.disabled=true;
+    bpmVal.innerHTML='<span class="bpm-def">genre default</span>';
+  } else {
+    bpmAutoBtn.classList.remove('on');bpmAutoBtn.setAttribute('aria-pressed','false');
+    bpmSlider.disabled=false;
+    bpmSlider.value=bpmManual;
+    bpmVal.textContent=bpmManual+' bpm';
+  }
+}
+bpmAutoBtn.onclick=()=>{
+  bpmManual = bpmManual===null ? genreDefaultBpm() : null;
+  paintBpm();paint();
+};
+bpmSlider.oninput=e=>{
+  bpmManual=+e.target.value;
+  paintBpm();paint();
+};
+paintBpm();
+
+// bass engine controls
+const bassSel=document.getElementById('bassSel');
+Object.keys(BASS_LIB).forEach(k=>{
+  const o=document.createElement('option');o.value=k;o.textContent=k;bassSel.appendChild(o);
+});
+bassSel.onchange=e=>{
+  bassType=e.target.value||null;
+  document.querySelectorAll('#bassAmt button').forEach(b=>b.disabled=!bassType);
+  if(channels.length){
+    if(bassType) current['bass']={text:bassVariant(current['bass']?.text),ch:-1};
+    else {const asn=slotAssign();const chI=asn['bass'];current['bass']={text:makeVariant(G[channels[chI].name],'bass'),ch:chI};}
+    changedNow=new Set(['bass']);
+  }
+  paint();
+};
+document.querySelectorAll('#bassAmt button').forEach(b=>{
+  b.onclick=()=>{
+    bassAmt=b.dataset.a;
+    document.querySelectorAll('#bassAmt button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    if(bassType&&channels.length){
+      current['bass']={text:bassVariant(),ch:-1};
+      changedNow=new Set(['bass']);
+    }
+    paint();
+  };
+});
+
+// vox engine controls
+const voxSel=document.getElementById('voxSel');
+Object.keys(VOX_LIB).forEach(k=>{
+  const o=document.createElement('option');o.value=k;o.textContent=k;voxSel.appendChild(o);
+});
+function voxAmtEnabled(){return !!voxType && voxType!=="Instrumental";}
+function paintVoxAmt(){document.querySelectorAll('#voxAmt button').forEach(b=>b.disabled=!voxAmtEnabled());}
+voxSel.onchange=e=>{
+  voxType=e.target.value||null;
+  paintVoxAmt();
+  if(!voxType){delete current['vocal'];locked.delete('vocal');changedNow.delete('vocal');}
+  else if(channels.length){
+    current['vocal']={text:voxVariant(current['vocal']?.text),ch:-2};
+    changedNow=new Set(['vocal']);
+  }
+  paint();
+};
+document.querySelectorAll('#voxAmt button').forEach(b=>{
+  b.onclick=()=>{
+    voxAmt=b.dataset.a;
+    document.querySelectorAll('#voxAmt button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    if(voxType&&channels.length){
+      current['vocal']={text:voxVariant(),ch:-2};
+      changedNow=new Set(['vocal']);
+    }
+    paint();
+  };
+});
+
+// arrangement structure controls
+const structSel=document.getElementById('structSel');
+Object.keys(STRUCT_LIB).forEach(k=>{
+  const o=document.createElement('option');o.value=k;o.textContent=k;structSel.appendChild(o);
+});
+structSel.onchange=e=>{
+  structType=e.target.value||null;
+  if(!structType){delete current['structure'];locked.delete('structure');changedNow.delete('structure');}
+  else if(channels.length){
+    current['structure']={text:structVariant(current['structure']?.text),ch:-3};
+    changedNow=new Set(['structure']);
+  }
+  paint();
+};
+
+// mood engine controls
+const moodSel=document.getElementById('moodSel');
+Object.keys(MOOD_LIB).forEach(k=>{
+  const o=document.createElement('option');o.value=k;o.textContent=k;moodSel.appendChild(o);
+});
+function paintMoodAmt(){document.querySelectorAll('#moodAmt button').forEach(b=>b.disabled=!moodType);}
+moodSel.onchange=e=>{
+  moodType=e.target.value||null;
+  paintMoodAmt();
+  if(!moodType){delete current['mood'];locked.delete('mood');changedNow.delete('mood');}
+  else if(channels.length){
+    current['mood']={text:moodVariant(current['mood']?.text),ch:-4};
+    changedNow=new Set(['mood']);
+  }
+  paint();
+};
+document.querySelectorAll('#moodAmt button').forEach(b=>{
+  b.onclick=()=>{
+    moodAmt=b.dataset.a;
+    document.querySelectorAll('#moodAmt button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    if(moodType&&channels.length){
+      current['mood']={text:moodVariant(),ch:-4};
+      changedNow=new Set(['mood']);
+    }
+    paint();
+  };
+});
+
+// surprise mode — random 2-3 genre mix
+document.getElementById('surprise').onclick=()=>{
+  const pool=[...names].sort(()=>Math.random()-.5);
+  const k=Math.random()<0.5?2:3;
+  channels=pool.slice(0,k).map(n=>({name:n,weight:20+5*Math.floor(Math.random()*17)}));
+  locked.clear();
+  buildFresh();
+  paint();
+};
+
+// CLEAR DECK — full reset of the current sound (presets & history survive)
+function deckDirty(){
+  return channels.length||bassType||voxType||structType||moodType||bpmManual!==null||excludes.length||lyrArea.value.trim();
+}
+document.getElementById('clearDeck').onclick=()=>{
+  if(!deckDirty())return;
+  const withLyr=lyrArea.value.trim()?' Lyrics will be cleared too.':'';
+  if(!confirm('Clear the whole deck — genres, engines, BPM, excludes?'+withLyr+' Presets and history are kept.'))return;
+  channels=[]; locked.clear(); changedNow.clear(); current={};
+  bassType=null; bassAmt='forward';
+  voxType=null; voxAmt='forward';
+  structType=null;
+  moodType=null; moodAmt='forward';
+  bpmManual=null;
+  excludes=[];
+  lyrArea.value=''; lyrLastSkeleton=''; lyrTpl.value=''; paintLyrChars(); storeSave();
+  // sync engine controls
+  bassSel.value=''; document.querySelectorAll('#bassAmt button').forEach(b=>{b.disabled=true;b.classList.toggle('on',b.dataset.a==='forward');});
+  voxSel.value=''; paintVoxAmt(); document.querySelectorAll('#voxAmt button').forEach(b=>b.classList.toggle('on',b.dataset.a==='forward'));
+  structSel.value='';
+  moodSel.value=''; paintMoodAmt(); document.querySelectorAll('#moodAmt button').forEach(b=>b.classList.toggle('on',b.dataset.a==='forward'));
+  paintBpm(); paintExChips(); paintExOut(); paint();
+};
+
+// EXCLUDE STYLES
+const EX_PRESETS=["vocals","autotune","guitar","piano","drums","distortion","edm drop","trap hats","808","fadeout ending","spoken intro","saxophone","whistling","children's voices"];
+let excludes=[];
+const exChipsEl=document.getElementById('exChips');
+function paintExChips(){
+  exChipsEl.innerHTML='';
+  const all=[...EX_PRESETS,...excludes.filter(x=>!EX_PRESETS.includes(x))];
+  all.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='chip'+(excludes.includes(t)?' on':'');
+    b.textContent=t;
+    b.onclick=()=>{excludes.includes(t)?excludes=excludes.filter(x=>x!==t):excludes.push(t);paintExChips();paintExOut();paint();};
+    exChipsEl.appendChild(b);
+  });
+}
+function paintExOut(){
+  const box=document.getElementById('exOut');
+  if(excludes.length){box.style.display='flex';document.getElementById('exTxt').textContent=excludes.join(', ');}
+  else box.style.display='none';
+}
+document.getElementById('exAdd').onclick=()=>{
+  const inp=document.getElementById('exInput');
+  const v=inp.value.trim().toLowerCase();
+  if(v&&!excludes.includes(v)){excludes.push(v);inp.value='';paintExChips();paintExOut();paint();}
+};
+document.getElementById('exInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('exAdd').click();});
+document.getElementById('exCopy').onclick=async()=>{
+  const t=excludes.join(', '); if(!t)return;
+  try{await navigator.clipboard.writeText(t);}catch(e){
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }
+  const btn=document.getElementById('exCopy');btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy excludes',1400);
+};
+paintExChips();
+
+// LYRICS HELPER — structure tags for Suno's lyrics box
+const LYR_TPL = {
+"Classic Pop":["[Intro]","[Verse 1]","[Pre-Chorus]","[Chorus]","[Verse 2]","[Pre-Chorus]","[Chorus]","[Bridge]","[Chorus]","[Outro]"],
+"Simple":["[Verse 1]","[Chorus]","[Verse 2]","[Chorus]"],
+"Hip-Hop":["[Intro]","[Verse 1]","[Hook]","[Verse 2]","[Hook]","[Verse 3]","[Hook]","[Outro]"],
+"EDM / Club":["[Intro]","[Verse]","[Build Up]","[Drop]","[Verse]","[Build Up]","[Drop]","[Outro]"],
+"Ballad / Story":["[Verse 1]","[Verse 2]","[Chorus]","[Verse 3]","[Chorus]","[Bridge]","[Final Chorus]","[Outro]"],
+"Instrumental":["[Intro]","[Instrumental]","[Break]","[Instrumental Solo]","[Instrumental]","[Big Finish]","[End]"]
+};
+const LYR_TAGS = ["[Verse]","[Chorus]","[Pre-Chorus]","[Bridge]","[Hook]","[Intro]","[Outro]","[Break]","[Build Up]","[Drop]","[Instrumental]","[Guitar Solo]","[Whispered]","[Spoken Word]","[Big Finish]","[End]"];
+
+const lyrArea=document.getElementById('lyrArea');
+const lyrTpl=document.getElementById('lyrTpl');
+let lyrLastSkeleton='';
+
+Object.keys(LYR_TPL).forEach(k=>{
+  const o=document.createElement('option');o.value=k;o.textContent=k;lyrTpl.appendChild(o);
+});
+
+function paintLyrChars(){
+  const el=document.getElementById('lyrChars');
+  const len=lyrArea.value.length;
+  if(!len){el.textContent='';el.classList.remove('warn');return;}
+  el.textContent=`${len} chars · Suno lyrics box limit ≈5000`;
+  el.classList.toggle('warn',len>5000);
+}
+lyrArea.addEventListener('input',()=>{paintLyrChars();storeSaveSoon();});
+
+lyrTpl.onchange=e=>{
+  if(!e.target.value) return;
+  const skel=LYR_TPL[e.target.value].join('\n\n\n')+'\n';
+  const cur=lyrArea.value.trim();
+  // guard: only overwrite silently if the area is empty or still an untouched skeleton
+  if(cur && cur!==lyrLastSkeleton.trim()){
+    if(!confirm('Replace the current lyrics with the "'+e.target.value+'" skeleton? Your text will be lost.')){
+      lyrTpl.value='';return;
+    }
+  }
+  lyrArea.value=skel;
+  lyrLastSkeleton=skel;
+  paintLyrChars();storeSaveSoon();
+  lyrArea.focus();
+  lyrArea.setSelectionRange(skel.indexOf('\n')+1,skel.indexOf('\n')+1);
+};
+
+// tag chips — insert at cursor on their own line
+const lyrTagsEl=document.getElementById('lyrTags');
+LYR_TAGS.forEach(t=>{
+  const b=document.createElement('button');
+  b.className='chip';b.textContent=t;
+  b.onclick=()=>{
+    const v=lyrArea.value;
+    const pos=lyrArea.selectionStart??v.length;
+    const before=v.slice(0,pos), after=v.slice(pos);
+    const pre = !before ? '' : (before.endsWith('\n\n') ? '' : (before.endsWith('\n') ? '\n' : '\n\n'));
+    const post = after.startsWith('\n') ? '' : '\n';
+    const ins=pre+t+post;
+    lyrArea.value=before+ins+after;
+    const np=pos+ins.length;
+    lyrArea.focus();lyrArea.setSelectionRange(np,np);
+    paintLyrChars();
+  };
+  lyrTagsEl.appendChild(b);
+});
+
+document.getElementById('lyrClear').onclick=()=>{
+  if(lyrArea.value.trim() && lyrArea.value.trim()!==lyrLastSkeleton.trim()){
+    if(!confirm('Clear all lyrics? This cannot be undone.')) return;
+  }
+  lyrArea.value='';lyrLastSkeleton='';lyrTpl.value='';
+  paintLyrChars();storeSave();lyrArea.focus();
+};
+
+document.getElementById('lyrCopy').onclick=async ev=>{
+  const t=lyrArea.value.trim(); if(!t)return;
+  try{await navigator.clipboard.writeText(t);}catch(e){
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }
+  ev.target.textContent='Copied ✓';setTimeout(()=>ev.target.textContent='Copy lyrics',1400);
+};
+
+// DECK MEMORY — presets & history (persisted in localStorage, v1.1)
+let presets=[], history=[];
+const STORE_KEY='promptdeck.v1';
+let storeOK=true;
+function storeSave(){
+  if(!storeOK)return;
+  try{localStorage.setItem(STORE_KEY,JSON.stringify({presets,history,lyrics:lyrArea.value}));}
+  catch(e){storeOK=false;}
+}
+let _storeT=null;
+function storeSaveSoon(){clearTimeout(_storeT);_storeT=setTimeout(storeSave,400);}
+function storeLoad(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(!raw)return;
+    const d=JSON.parse(raw);
+    if(Array.isArray(d.presets))presets=d.presets.slice(0,12);
+    if(Array.isArray(d.history))history=d.history.filter(x=>typeof x==='string').slice(0,8);
+    if(typeof d.lyrics==='string'&&d.lyrics&&!lyrArea.value){lyrArea.value=d.lyrics;paintLyrChars();}
+  }catch(e){storeOK=false;}
+}
+function snapshot(){
+  return {
+    channels:channels.map(c=>({...c})),
+    intensity, bpmManual, bassType, bassAmt, voxType, voxAmt, structType, moodType, moodAmt,
+    current:JSON.parse(JSON.stringify(current)),
+    locked:[...locked],
+    excludes:[...excludes],
+    lyrics:lyrArea.value
+  };
+}
+function presetName(){
+  const g=channels.map(c=>c.name).join(' + ')||'empty deck';
+  const extras=[bassType?'bass:'+bassType:null,voxType?'vox:'+voxType:null,structType?'arr:'+structType:null,moodType?'mood:'+moodType:null].filter(Boolean).join(' · ');
+  return {g,extras};
+}
+function paintPresets(){
+  const el=document.getElementById('presetList');
+  if(!presets.length){el.innerHTML='<div class="empty" style="padding:14px 0">No presets yet — dial in a sound and save it</div>';return;}
+  el.innerHTML='';
+  presets.forEach((p,i)=>{
+    const d=document.createElement('div');d.className='memitem';
+    const hasLyr=p.state&&p.state.lyrics&&p.state.lyrics.trim();
+    d.innerHTML=`<span class="mname"><b>${String(i+1).padStart(2,'0')}</b> ${p.title}${p.sub?` <span style="color:var(--dim);font-size:11px">· ${p.sub}</span>`:''}${hasLyr?' <span style="color:var(--cue);font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.08em">+LYR</span>':''}</span>
+      <span class="mtime">${p.time}</span>
+      <button class="load">LOAD</button><button class="del">DEL</button>`;
+    d.querySelector('.load').onclick=()=>{
+      const lyricsAtRisk = p.state.lyrics!==undefined && lyrArea.value.trim() && lyrArea.value!==p.state.lyrics;
+      if(channels.length || lyricsAtRisk){
+        const msg='Load preset "'+p.title+'"? Current deck settings'+(lyricsAtRisk?' and lyrics':'')+' will be replaced.';
+        if(!confirm(msg)) return;
+      }
+      loadPreset(p.state);
+    };
+    d.querySelector('.del').onclick=()=>{presets.splice(i,1);paintPresets();storeSave();};
+    el.appendChild(d);
+  });
+}
+document.getElementById('saveP').onclick=()=>{
+  if(!channels.length)return;
+  const n=presetName();
+  presets.unshift({title:n.g,sub:n.extras,time:new Date().toLocaleTimeString().slice(0,5),state:snapshot()});
+  if(presets.length>12)presets.pop();
+  paintPresets();storeSave();
+};
+function loadPreset(st){
+  channels=st.channels.map(c=>({...c}));
+  intensity=st.intensity; bpmManual=st.bpmManual;
+  bassType=st.bassType; bassAmt=st.bassAmt;
+  voxType=st.voxType; voxAmt=st.voxAmt;
+  structType=st.structType||null;
+  moodType=st.moodType||null; moodAmt=st.moodAmt||'forward';
+  current=JSON.parse(JSON.stringify(st.current));
+  locked=new Set(st.locked); excludes=[...st.excludes];
+  changedNow.clear();
+  // sync controls
+  document.querySelectorAll('#intensity button').forEach(x=>x.classList.toggle('on',+x.dataset.i===intensity));
+  document.getElementById('intNote').textContent = intensity===1?'changes 1 element':(intensity===2?'changes 2–3 elements':'changes everything except the base');
+  bassSel.value=bassType||'';
+  document.querySelectorAll('#bassAmt button').forEach(b=>{b.disabled=!bassType;b.classList.toggle('on',b.dataset.a===bassAmt);});
+  voxSel.value=voxType||'';
+  paintVoxAmt();
+  document.querySelectorAll('#voxAmt button').forEach(b=>b.classList.toggle('on',b.dataset.a===voxAmt));
+  structSel.value=structType||'';
+  moodSel.value=moodType||'';
+  paintMoodAmt();
+  document.querySelectorAll('#moodAmt button').forEach(b=>b.classList.toggle('on',b.dataset.a===moodAmt));
+  // lyrics — only if the preset carries them (v0.14+); older presets leave lyrics untouched
+  if(st.lyrics!==undefined){
+    lyrArea.value=st.lyrics;
+    lyrLastSkeleton=''; lyrTpl.value='';
+    paintLyrChars();
+  }
+  paintBpm(); paintExChips(); paintExOut(); paint(); storeSaveSoon();
+}
+
+// preset export / import (JSON via clipboard)
+document.getElementById('expP').onclick=async ev=>{
+  if(!presets.length)return;
+  const t=JSON.stringify(presets);
+  try{await navigator.clipboard.writeText(t);}catch(e){
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }
+  ev.target.textContent='COPIED ✓';setTimeout(()=>ev.target.textContent='EXPORT JSON',1400);
+};
+let impOpen=false;
+document.getElementById('impP').onclick=ev=>{
+  const box=document.getElementById('impBox');
+  if(!impOpen){
+    box.style.display='block';impOpen=true;
+    ev.target.textContent='LOAD PASTED JSON';box.focus();
+    return;
+  }
+  try{
+    const arr=JSON.parse(box.value);
+    if(!Array.isArray(arr)) throw 0;
+    const ok=arr.filter(p=>p&&p.state&&p.title);
+    if(!ok.length) throw 0;
+    presets=[...ok,...presets].slice(0,12);
+    paintPresets();storeSave();
+    box.style.display='none';box.value='';impOpen=false;
+    ev.target.textContent='IMPORTED ✓';setTimeout(()=>ev.target.textContent='IMPORT JSON',1400);
+  }catch(e){
+    box.value='';box.placeholder='⚠ invalid JSON — paste the exported preset text and press LOAD PASTED JSON';
+  }
+};
+function paintHist(){
+  const el=document.getElementById('histList');
+  if(!history.length){el.innerHTML='<div class="empty" style="padding:14px 0">Copied prompts land here for quick recall</div>';return;}
+  el.innerHTML='';
+  history.forEach(h=>{
+    const d=document.createElement('div');d.className='histitem';
+    d.innerHTML=`<span class="htxt">${h}</span><button>COPY</button>`;
+    d.querySelector('button').onclick=async ev=>{
+      try{await navigator.clipboard.writeText(h);}catch(e){
+        const ta=document.createElement('textarea');ta.value=h;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+      }
+      ev.target.textContent='✓';setTimeout(()=>ev.target.textContent='COPY',1200);
+    };
+    el.appendChild(d);
+  });
+}
+
+async function copyPrompt(btn){
+  const t=promptText(); if(!t)return;
+  try{await navigator.clipboard.writeText(t);}catch(e){
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }
+  btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy prompt',1400);
+  if(history[0]!==t){history.unshift(t);if(history.length>8)history.pop();paintHist();storeSave();}
+}
+document.getElementById('copy').onclick=e=>copyPrompt(e.target);
+document.getElementById('mcopy').onclick=e=>copyPrompt(e.target);
+
+storeLoad();
+paintPresets();paintHist();
+paint();
+</script>
+</body>
+</html>
