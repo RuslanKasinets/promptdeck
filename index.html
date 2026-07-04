@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PromptDeck v1.2 — Suno Style Prompt Mixer</title>
+<title>PromptDeck v1.3 — Suno Style Prompt Mixer</title>
 <meta name="description" content="PromptDeck — a mixing-console style prompt builder for Suno AI. Mix up to three genres, dial in bass, vocals, arrangement and mood engines, and copy a ready style prompt.">
 <meta name="theme-color" content="#0A0A0C">
 <meta property="og:title" content="PromptDeck — Suno Style Prompt Mixer">
@@ -243,7 +243,7 @@ footer{padding:26px;text-align:center;font-family:'JetBrains Mono',monospace;fon
 
 <div class="top">
   <h1><span class="led"></span>PROMPTDECK</h1>
-  <span>Suno style prompt mixer · v1.2 · local storage</span>
+  <span>Suno style prompt mixer · v1.3 · local storage</span>
 </div>
 
 <div class="app">
@@ -394,7 +394,7 @@ your hook here…"></textarea>
   <button class="copy" id="mcopy">Copy prompt</button>
 </div>
 
-<footer>PROMPTDECK v1.2 · prompts avoid artist names (Suno blocks them) · demo build</footer>
+<footer>PROMPTDECK v1.3 · prompts avoid artist names (Suno blocks them) · demo build</footer>
 
 <script>
 const SLOTS = ["bass","harmony","rhythm","atmosphere","texture"];
@@ -536,7 +536,55 @@ const G = {
  harmony:["graceful string quartet writing","lyrical woodwind melodies","elegant solo piano passages","rich full-orchestra harmonies","delicate harp arpeggios"],
  rhythm:["flowing rubato phrasing","stately minuet pulse","gentle waltz lilt","dramatic accelerando passages","precise baroque momentum"],
  atmosphere:["grand concert hall evening","sunlit palace ballroom","pastoral countryside morning","moonlit chamber recital","romantic-era emotional sweep"],
- texture:["natural concert-hall acoustics","warm vintage orchestral recording","intimate chamber closeness","wide symphonic depth","airy audiophile clarity"]}}
+ texture:["natural concert-hall acoustics","warm vintage orchestral recording","intimate chamber closeness","wide symphonic depth","airy audiophile clarity"]}},
+"Drum & Bass":{bpm:"170–176 bpm",base:"drum and bass, 174 bpm, high-energy rolling breaks",slots:{
+ bass:["growling reese low end","deep rolling sub pressure","elastic wobbling bassline","clean weighty sub drops","gritty distorted low-end stabs"],
+ harmony:["euphoric liquid piano chords","cold minor synth stabs","floating pad layers above the chaos","soulful vocal-chop melodies","dark cinematic string hits"],
+ rhythm:["chopped amen-style breaks","tight two-step drum pattern","rattling fast-shuffle percussion","punchy kick-snare rollers","syncopated breakbeat fills"],
+ atmosphere:["neon-lit late-night city sprint","jungle-canopy rave energy","pirate-radio underground vibe","widescreen liquid serenity","adrenaline chase-scene urgency"],
+ texture:["crisp surgical drum processing","tape-saturated break grit","airy reverb over tight lows","clean club-ready mixdown","subtle vinyl dust on top"]}},
+"Afrobeats":{bpm:"98–110 bpm",base:"afrobeats, 104 bpm, sunny infectious groove",slots:{
+ bass:["bouncy melodic log-drum low end","warm round bass riffs","springy syncopated bassline","deep laid-back low groove","percussive plucked bass hooks"],
+ harmony:["bright highlife guitar lines","warm marimba-like keys","lush tropical synth chords","call-and-response melodic phrases","breezy plucked riff loops"],
+ rhythm:["shuffling percussion with shakers","laid-back kick with off-beat snaps","polyrhythmic conga layers","crisp clave-driven pattern","rolling tom grooves under the beat"],
+ atmosphere:["golden-hour beach party","lagos rooftop celebration","warm humid night air","carefree summer road trip","festival crowd swaying in unison"],
+ texture:["organic hand-played percussion feel","glossy modern afropop sheen","subtle saturation warmth","wide open stereo bounce","light dub-style delay accents"]}},
+"City Pop":{bpm:"96–112 bpm",base:"japanese city pop, 104 bpm, glossy nostalgic 80s groove",slots:{
+ bass:["slap bass runs with chrome shine","smooth fretless glide","funky fingered bass hooks","round synth-bass pulse","walking low end with chic swagger"],
+ harmony:["sparkling electric piano extensions","jazzy major-7th guitar chords","lush brass-section stabs","dreamy analog string machines","bright chorused guitar arpeggios"],
+ rhythm:["tight linn-style drum groove","crisp gated snare accents","breezy mid-tempo shuffle","clean session-drummer precision","syncopated hi-hat sparkle"],
+ atmosphere:["midnight highway by the bay","neon skyline convertible cruise","airport lounge daydream","summer resort balcony breeze","bittersweet urban nostalgia"],
+ texture:["polished 80s studio gloss","warm cassette-deck color","shimmering chorus on everything","clean expensive session sound","soft-focus reverb glow"]}},
+"Gospel / Soul":{bpm:"70–120 bpm",base:"gospel soul, 92 bpm, uplifting spiritual power",slots:{
+ bass:["deep supportive upright-style low end","gliding melodic bass runs","warm church-band bass pocket","punchy motown-inspired lines","sustained rooted low notes"],
+ harmony:["hammond organ swells with leslie spin","rich choir-backed piano chords","soulful gospel chord walkdowns","warm rhodes with grace-note runs","triumphant brass-and-keys layers"],
+ rhythm:["hand-clap driven backbeat","dynamic gospel chops and fills","steady worship-band groove","shuffling pocket with tambourine","building double-time celebration"],
+ atmosphere:["sunday-morning congregation joy","candle-lit testimonial intimacy","soaring collective praise","tearful redemptive climax","warm community hall gathering"],
+ texture:["live room energy with crowd warmth","vintage soul-record saturation","natural dynamic swells","raw unquantized human feel","spacious sanctuary reverb"]}},
+"Reggae / Dub":{bpm:"70–90 bpm",base:"roots reggae, 76 bpm, laid-back skanking groove",slots:{
+ bass:["heavyweight melodic dub low end","fat round one-drop bassline","meditative repeating bass riddim","deep sub with sparse phrasing","bouncing steppers bass drive"],
+ harmony:["off-beat skank guitar chops","bubbling organ shuffle","melodica lead floating on top","warm horn-section refrains","spacey dub keyboard stabs"],
+ rhythm:["classic one-drop drum pattern","steppers four-to-the-floor pulse","rimshot-heavy laid-back groove","military-style snare rolls into drops","loose percussion with woodblocks"],
+ atmosphere:["island sunset sound-system session","smoky studio session haze","peaceful roots-and-culture warmth","echo-chamber dub dimension","street dance under string lights"],
+ texture:["cavernous spring-reverb throws","tape-echo trails on snares","warm analog desk saturation","stripped instrumental dropouts","hazy low-fidelity charm"]}},
+"Funk / Disco":{bpm:"105–120 bpm",base:"funk disco, 112 bpm, irresistible dancefloor groove",slots:{
+ bass:["slap-and-pop bass acrobatics","rubbery octave-jumping disco line","greasy syncopated funk riff","round pumping four-note hooks","talkbox-flavored low grooves"],
+ harmony:["wah-wah rhythm guitar sixteenths","glittering string-section runs","clavinet riffs with attitude","stabbing horn-section punches","silky electric-piano comping"],
+ rhythm:["four-on-the-floor with open-hat offbeats","tight pocket drums with ghost snares","hand-percussion and cowbell sparkle","breakdown-ready drum grooves","live drummer swing and fills"],
+ atmosphere:["mirror-ball midnight dancefloor","roller-rink saturday night","block-party summer heat","velvet-rope club glamour","sweaty basement funk jam"],
+ texture:["vintage analog console warmth","shimmering disco-string sheen","punchy tape-compressed drums","live-band room bleed","glossy top-end sparkle"]}},
+"Blues":{bpm:"60–100 bpm",base:"electric blues, 78 bpm, raw soulful storytelling",slots:{
+ bass:["walking twelve-bar low end","slow-dragging shuffle bass","warm upright thump","greasy pentatonic bass fills","steady root-and-fifth foundation"],
+ harmony:["crying string-bend guitar licks","smoky barroom piano rolls","slow-burning organ pads","slide guitar moans","call-and-answer guitar phrases"],
+ rhythm:["lazy shuffle with brushed snare","slow 12/8 sway","stomping juke-joint backbeat","sparse heartbeat kick and rim","loose behind-the-beat pocket"],
+ atmosphere:["midnight crossroads solitude","dim whiskey-bar intimacy","delta porch at dusk","rain-streaked window melancholy","electric club set catching fire"],
+ texture:["cranked tube-amp breakup","room-mic vintage grit","honest unpolished takes","warm tremolo shimmer","dusty old-record patina"]}},
+"K-Pop":{bpm:"100–128 bpm",base:"k-pop, 118 bpm, polished high-energy production",slots:{
+ bass:["punchy designed sub drops","bouncing synth-bass hooks","tight hybrid 808-and-synth low end","elastic funk-influenced lines","clean weighty club pressure"],
+ harmony:["glossy stacked synth leads","bright plucked hook melodies","cinematic pre-drop pad swells","genre-flipping section contrasts","sparkling bell-tone motifs"],
+ rhythm:["hard-hitting trap-tinged verses","four-on-the-floor lift-off sections","intricate percussion switch-ups","crisp snap-and-clap layers","half-time breakdown moments"],
+ atmosphere:["stadium light-stick ocean","futuristic music-video set","confident runway strut energy","bittersweet emotional bridge","maximalist candy-colored world"],
+ texture:["ultra-clean expensive mix","dramatic riser-and-impact design","vocal-chop ear-candy accents","surgical modern top end","widescreen stereo maximalism"]}}
 };
 
 const names = Object.keys(G);
@@ -714,7 +762,10 @@ const GTAGS = {
 "Neoclassical":["orchestral","chill"],"Dark Neoclassical ★":["orchestral","chill"],
 "Trap":["urban"],"Dark Ambient":["chill","orchestral"],"Country / Americana":["live"],
 "Dance Pop":["electronic"],"Rock":["live"],"Pop":["electronic"],"Latin":["urban","live"],
-"Jazz":["live","chill"],"House":["electronic"],"Metal":["live"],"Classical":["orchestral"]
+"Jazz":["live","chill"],"House":["electronic"],"Metal":["live"],"Classical":["orchestral"],
+"Drum & Bass":["electronic"],"Afrobeats":["urban","live"],"City Pop":["chill","live"],
+"Gospel / Soul":["live"],"Reggae / Dub":["live","chill"],"Funk / Disco":["live","electronic"],
+"Blues":["live"],"K-Pop":["electronic","urban"]
 };
 const GCATS=["all","electronic","urban","live","orchestral","chill"];
 let gQuery='', gCat='all';
