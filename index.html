@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PromptDeck v1.1 — Suno Style Prompt Mixer</title>
+<title>PromptDeck v1.2 — Suno Style Prompt Mixer</title>
 <meta name="description" content="PromptDeck — a mixing-console style prompt builder for Suno AI. Mix up to three genres, dial in bass, vocals, arrangement and mood engines, and copy a ready style prompt.">
 <meta name="theme-color" content="#0A0A0C">
 <meta property="og:title" content="PromptDeck — Suno Style Prompt Mixer">
@@ -243,7 +243,7 @@ footer{padding:26px;text-align:center;font-family:'JetBrains Mono',monospace;fon
 
 <div class="top">
   <h1><span class="led"></span>PROMPTDECK</h1>
-  <span>Suno style prompt mixer · v1.1 · local storage</span>
+  <span>Suno style prompt mixer · v1.2 · local storage</span>
 </div>
 
 <div class="app">
@@ -394,7 +394,7 @@ your hook here…"></textarea>
   <button class="copy" id="mcopy">Copy prompt</button>
 </div>
 
-<footer>PROMPTDECK v1.1 · prompts avoid artist names (Suno blocks them) · demo build</footer>
+<footer>PROMPTDECK v1.2 · prompts avoid artist names (Suno blocks them) · demo build</footer>
 
 <script>
 const SLOTS = ["bass","harmony","rhythm","atmosphere","texture"];
@@ -833,6 +833,17 @@ function slotRegen(s,prev){
   return {text:makeVariant(g,s,prev),ch:chI};
 }
 const DEDUP_STOP=new Set(['with','from','into','over','under','than','like','style','music']);
+// v1.2 — fallback: вырезать повторный токен из фразы, если реролл не помог
+function stripWord(t,w){
+  const re=new RegExp('(^|\\s)[a-z\\-]*'+w.replace(/-/g,'\\-')+'[a-z\\-]*','gi');
+  let out=t.replace(re,' ');
+  out=out.replace(/\s{2,}/g,' ').replace(/\s+,/g,',').replace(/,\s*,/g,',')
+         .replace(/^[,\s]+|[,\s]+$/g,'')
+         .replace(/\s+(and|with|of|the|a|an)\s*$/i,'')
+         .replace(/\ba(?= [aeiou])/g,'an');
+  if((out.match(/[a-z]{3,}/gi)||[]).length<2) return null; // фраза стала куцей — не трогаем
+  return out;
+}
 function coherencePass(){
   if(channels.length===0)return;
   for(let round=0;round<3;round++){
@@ -854,17 +865,27 @@ function coherencePass(){
     const cnt={};
     const baseTxt=cleanBase(basePrompt(),negStems(texts)).toLowerCase();
     const baseWords={};
-    (baseTxt.match(/[a-z\-]{4,}/g)||[]).forEach(w=>{if(!DEDUP_STOP.has(w)){cnt[w]=(cnt[w]||0)+1;baseWords[w]=(baseWords[w]||0)+1;}});
-    slots.forEach(s=>{(current[s].text.toLowerCase().match(/[a-z\-]{4,}/g)||[]).forEach(w=>{if(!DEDUP_STOP.has(w))cnt[w]=(cnt[w]||0)+1;});});
+    // v1.2 — дефисные токены считаем и целиком, и по частям (radio-ready => radio, ready)
+    const tokens=t=>{const out=[];(t.match(/[a-z\-]{4,}/g)||[]).forEach(tok=>{out.push(tok);if(tok.includes('-'))tok.split('-').forEach(p=>{if(p.length>=4)out.push(p);});});return out;};
+    tokens(baseTxt).forEach(w=>{if(!DEDUP_STOP.has(w)){cnt[w]=(cnt[w]||0)+1;baseWords[w]=(baseWords[w]||0)+1;}});
+    slots.forEach(s=>{tokens(current[s].text.toLowerCase()).forEach(w=>{if(!DEDUP_STOP.has(w))cnt[w]=(cnt[w]||0)+1;});});
     Object.keys(cnt).filter(w=>cnt[w]>=3).forEach(w=>{
       let seen=Math.min(baseWords[w]||0,2);
       slots.forEach(s=>{
         if(!current[s].text.toLowerCase().includes(w))return;
-        seen++;
+        // v1.2 — считаем все вхождения в слоте (и в дефисных токенах), а не факт наличия
+        seen+=tokens(current[s].text.toLowerCase()).filter(x=>x===w).length||1;
         if(seen<3||locked.has(s))return;
+        let fixed=false;
         for(let k=0;k<10;k++){
           const c=slotRegen(s,current[s].text);
-          if(!c.text.toLowerCase().includes(w)&&!isBanned(c.text)&&!segsHit(c.text,banStems)){current[s]=c;changed=true;break;}
+          if(!c.text.toLowerCase().includes(w)&&!isBanned(c.text)&&!segsHit(c.text,banStems)){current[s]=c;changed=true;fixed=true;break;}
+        }
+        if(!fixed){ // v1.2 — реролл не помог, вырезаем повторный токен из фразы
+          const stripped=stripWord(current[s].text,w);
+          if(stripped&&stripped!==current[s].text&&!isBanned(stripped)&&!segsHit(stripped,banStems)){
+            current[s]={...current[s],text:stripped};changed=true;
+          }
         }
       });
     });
