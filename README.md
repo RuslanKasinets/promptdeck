@@ -10,7 +10,7 @@ Mix genres like a DJ, roll endless prompt variants, and paste a ready style prom
 
 ## ✨ Features
 
-- **Genre Mixer** — blend up to 3 genres (A/B/C channels) with weight faders across 22 genres
+- **Genre Mixer** — blend up to 3 genres (A/B/C channels) with weight faders across 30 genres
 - **Genre search & category chips** — live filtering: electronic / urban / live / orchestral / chill
 - **Variant generator** — reroll with intensity levels, repeat-avoidance history, per-slot locks
 - **5 content slots** — bass, harmony, rhythm, atmosphere, texture, distributed by channel weight
